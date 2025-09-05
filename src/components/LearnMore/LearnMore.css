@@ -1,0 +1,49 @@
+.learnmore-container {
+  background-color: #ffffff; /* White background */
+  color: #333; /* Default text */
+  padding: 2rem;
+  max-width: 1000px;
+  margin: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.learnmore-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: dodgerblue;
+  margin-bottom: 1.5rem;
+}
+
+.learnmore-subtitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: cyan;
+  margin-bottom: 0.5rem;
+}
+
+.learnmore-section {
+  margin-bottom: 2rem;
+}
+
+.learnmore-list {
+  text-align: left;
+  margin: 0 auto;
+  max-width: 700px;
+  color: #333;
+}
+
+.learnmore-button {
+  background-color: dodgerblue;
+  color: white;
+  padding: 0.6rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.3s ease;
+}
+
+.learnmore-button:hover {
+  background-color: #0066cc; /* darker blue */
+}

@@ -1,0 +1,31 @@
+.footer {
+  background: linear-gradient(135deg, rgb(71, 178, 244),rgb(126, 194, 211)); /* Sky blue gradient */
+  color: black; /* Text color */
+  padding: 20px 0;
+  text-align: center;
+}
+
+.footer-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.footer-socials {
+  margin-bottom: 10px;
+}
+
+.footer-socials a {
+  color: black;
+  margin: 0 10px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.footer-socials a:hover {
+  text-decoration: underline;
+}
+
+.footer-copy {
+  font-size: 0.9rem;
+}
