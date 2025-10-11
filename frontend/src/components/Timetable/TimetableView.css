@@ -1,0 +1,275 @@
+.timetable-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.timetable-section {
+  margin-bottom: 30px;
+}
+
+.timetable-section h3 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #3498db;
+}
+
+.timetable-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.timetable-table th {
+  background: #34495e;
+  color: white;
+  padding: 12px 8px;
+  text-align: center;
+  font-weight: 600;
+  border: 1px solid #2c3e50;
+}
+
+.timetable-table th:first-child {
+  background: #2c3e50;
+  min-width: 100px;
+}
+
+.day-cell {
+  background: #ecf0f1 !important;
+  color: #2c3e50;
+  font-weight: 600;
+  text-align: center;
+}
+
+.timetable-cell {
+  padding: 8px;
+  text-align: center;
+  border: 1px solid #bdc3c7;
+  vertical-align: top;
+  min-height: 60px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.timetable-cell:hover {
+  background-color: #f8f9fa;
+  transform: scale(1.02);
+}
+
+.timetable-cell.faculty-class {
+  background-color: #e8f5e8;
+  border-color: #27ae60;
+}
+
+.timetable-cell.faculty-class:hover {
+  background-color: #d5f4d5;
+}
+
+.timetable-cell.selected {
+  background-color: #3498db !important;
+  color: white;
+  border-color: #2980b9;
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+.timetable-cell.selected .slot-content {
+  color: white;
+}
+
+.slot-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.slot-content .subject {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.slot-content .class-info {
+  color: #7f8c8d;
+  font-size: 10px;
+}
+
+.slot-content .faculty-name {
+  color: #e74c3c;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.slot-content .room {
+  color: #8e44ad;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.lab-badge {
+  background: #e74c3c;
+  color: white;
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.empty-slot {
+  color: #95a5a6;
+  font-style: italic;
+}
+
+.class-selection {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+}
+
+.class-selection h3 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+.selection-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.form-select {
+  padding: 10px 12px;
+  border: 2px solid #bdc3c7;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.form-select:disabled {
+  background-color: #ecf0f1;
+  color: #7f8c8d;
+  cursor: not-allowed;
+}
+
+.swap-request-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 25px;
+  border-radius: 12px;
+  text-align: center;
+  margin-top: 30px;
+}
+
+.swap-request-section h4 {
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.selected-periods {
+  margin-bottom: 20px;
+}
+
+.period-info {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-bottom: 20px;
+}
+
+.period-item {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px 15px;
+  border-radius: 6px;
+  backdrop-filter: blur(10px);
+}
+
+.btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #2980b9, #1f618d);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.btn-lg {
+  padding: 15px 40px;
+  font-size: 18px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+  font-size: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .timetable-container {
+    padding: 10px;
+  }
+  
+  .timetable-table {
+    font-size: 12px;
+  }
+  
+  .timetable-table th,
+  .timetable-cell {
+    padding: 6px 4px;
+  }
+  
+  .selection-controls {
+    grid-template-columns: 1fr;
+  }
+  
+  .period-info {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .slot-content {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .timetable-table th small {
+    display: none;
+  }
+  
+  .slot-content .room,
+  .slot-content .faculty-name {
+    display: none;
+  }
+}

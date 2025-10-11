@@ -1,0 +1,148 @@
+.bg-container {
+    width: 100vw;
+    min-height: 100vh;
+    padding-bottom: 50px;
+    margin-bottom: 50px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Heading with glowing animation */
+.heading {
+    font-family: Marker Felt, fantasy;
+    color: rgb(51, 123, 204);
+    text-align: center;
+    font-size: 60px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #7e97e7 0%, #3b82f6 50%, #60a5fa 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        text-shadow: 0 0 10px rgba(35, 193, 241, 0.6);
+    }
+    to {
+        text-shadow: 0 0 20px rgba(96, 165, 250, 0.9);
+    }
+}
+
+.description {
+    font-family: Apple Chancery, cursive;
+    color: rgb(16, 161, 165);
+    text-align: center;
+    font-size: 20px;
+    max-width: 800px;
+}
+
+/* Buttons */
+.get-btn {
+    background: linear-gradient(135deg, rgb(40, 169, 220), rgb(28, 137, 177));
+    border: none;
+    color: white;
+    font-size: medium;
+    font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+.get-btn:hover {
+    background: white;
+    color: rgb(40, 169, 220);
+    box-shadow: 0 4px 15px rgba(40, 169, 220, 0.4);
+}
+
+.learn-btn {
+    border: 2px solid rgb(40, 169, 220);
+    font-weight: 500;
+    color: rgb(17, 166, 189);
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+.learn-btn:hover {
+    background: rgb(40, 169, 220);
+    color: white;
+    box-shadow: 0 4px 15px rgba(40, 169, 220, 0.4);
+}
+
+.developer-btn {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    border: none;
+    color: white;
+    font-size: medium;
+    font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+.developer-btn:hover {
+    background: white;
+    color: #e74c3c;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+    border: 2px solid #e74c3c;
+}
+
+/* Feature Cards */
+.features {
+    width: 400px;
+    min-height: 150px;
+    background: linear-gradient(135deg, #a2ccf0, #cce4ff);
+    border-radius: 20px;
+    font-family: 'Gill Sans', Calibri, sans-serif;
+    padding: 20px;
+    margin: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.features:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.features h1 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+/* Section Headings */
+.feature-heading,
+.testimonal-heading {
+    color: rgb(8, 149, 192);
+    font-family: 'Lucida Sans', Geneva, Verdana, sans-serif;
+    font-size: 30px;
+    text-align: center;
+    margin: 40px 10px 10px;
+}
+
+/* Testimonial Cards */
+.testimonal {
+    width: 400px;
+    min-height: 150px;
+    background: linear-gradient(135deg, #a2ccf0, #e6f1ff);
+    border-radius: 20px;
+    font-family: 'Times New Roman', serif;
+    padding: 20px;
+    margin: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.testimonal:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Containers */
+.features-container,
+.testimonal-container {
+    margin: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}

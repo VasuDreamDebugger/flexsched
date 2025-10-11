@@ -1,0 +1,259 @@
+.developer-login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.login-card {
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.login-header h2 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+  font-size: 28px;
+}
+
+.login-header p {
+  color: #7f8c8d;
+  font-size: 16px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.form-group input {
+  padding: 12px;
+  border: 2px solid #bdc3c7;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.login-btn {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2980b9, #1f618d);
+  transform: translateY(-1px);
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-info {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #3498db;
+}
+
+.login-info p {
+  margin: 5px 0;
+  font-size: 13px;
+  color: #2c3e50;
+}
+
+.developer-page {
+  min-height: 100vh;
+  background: #f8f9fa;
+  padding: 20px;
+}
+
+.developer-header {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-info h1 {
+  color: #2c3e50;
+  margin-bottom: 5px;
+  font-size: 32px;
+}
+
+.admin-info p {
+  color: #7f8c8d;
+  font-size: 16px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.btn-secondary, .btn-danger {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary {
+  background: #95a5a6;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #7f8c8d;
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #c0392b;
+  transform: translateY(-1px);
+}
+
+.developer-options {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.developer-options h2 {
+  color: #2c3e50;
+  margin-bottom: 30px;
+  font-size: 24px;
+  text-align: center;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 25px;
+}
+
+.option-card {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.option-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: #3498db;
+}
+
+.option-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.option-card h3 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+  font-size: 20px;
+}
+
+.option-card p {
+  color: #7f8c8d;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .developer-header {
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+
+  .header-actions {
+    justify-content: center;
+  }
+
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .login-card {
+    padding: 30px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .developer-page {
+    padding: 10px;
+  }
+
+  .developer-header {
+    padding: 20px;
+  }
+
+  .admin-info h1 {
+    font-size: 24px;
+  }
+
+  .option-card {
+    padding: 20px;
+  }
+
+  .option-icon {
+    font-size: 36px;
+  }
+}
