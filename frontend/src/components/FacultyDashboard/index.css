@@ -1,0 +1,335 @@
+/* Dashboard Container */
+.dashboard-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 20px 0;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+  background: linear-gradient(135deg, #a2ccf0, #cce4ff);
+  border-radius: 20px;
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.header-content h1 {
+  color: rgb(8, 149, 192);
+  font-family: 'Lucida Sans', Geneva, Verdana, sans-serif;
+  font-size: 32px;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, #7e97e7 0%, #3b82f6 50%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.faculty-info h4 {
+  color: rgb(16, 161, 165);
+  font-size: 20px;
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+
+.faculty-info p {
+  color: rgb(16, 161, 165);
+  font-size: 16px;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.header-actions {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+/* Dashboard Cards */
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 25px;
+  margin-top: 30px;
+}
+
+.dashboard-card {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: center;
+  border: 3px solid transparent;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  border-color: rgb(40, 169, 220);
+}
+
+.card-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.dashboard-card h3 {
+  color: rgb(8, 149, 192);
+  font-family: 'Lucida Sans', Geneva, Verdana, sans-serif;
+  font-size: 24px;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.dashboard-card p {
+  color: rgb(16, 161, 165);
+  font-size: 16px;
+  margin-bottom: 25px;
+  line-height: 1.5;
+}
+
+/* Stats */
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin: 25px 0;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.stat-number {
+  font-size: 32px;
+  font-weight: bold;
+  color: rgb(40, 169, 220);
+  background: linear-gradient(135deg, #7e97e7 0%, #3b82f6 50%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: rgb(16, 161, 165);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Card Actions */
+.card-actions {
+  margin-top: 25px;
+}
+
+/* Buttons */
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 140px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, rgb(40, 169, 220), rgb(28, 137, 177));
+  color: white;
+  box-shadow: 0 4px 15px rgba(40, 169, 220, 0.3);
+}
+
+.btn-primary:hover {
+  background: white;
+  color: rgb(40, 169, 220);
+  border: 2px solid rgb(40, 169, 220);
+  box-shadow: 0 6px 20px rgba(40, 169, 220, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: white;
+  color: rgb(40, 169, 220);
+  border: 2px solid rgb(40, 169, 220);
+}
+
+.btn-secondary:hover {
+  background: rgb(40, 169, 220);
+  color: white;
+  box-shadow: 0 4px 15px rgba(40, 169, 220, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 20px;
+  text-align: center;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid rgb(40, 169, 220);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner p {
+  color: rgb(16, 161, 165);
+  font-size: 18px;
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Faculty Information Card */
+.card {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: none;
+  margin-bottom: 20px;
+}
+
+.card h5 {
+  color: rgb(8, 149, 192);
+  font-family: 'Lucida Sans', Geneva, Verdana, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.card .row {
+  margin: 0;
+}
+
+.card .col-md-4 {
+  padding: 10px 15px;
+  border-right: 1px solid #e9ecef;
+}
+
+.card .col-md-4:last-child {
+  border-right: none;
+}
+
+.card strong {
+  color: rgb(16, 161, 165);
+  font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 15px 0;
+  }
+  
+  .dashboard-header {
+    flex-direction: column;
+    text-align: center;
+    padding: 25px;
+  }
+  
+  .header-content h1 {
+    font-size: 28px;
+  }
+  
+  .header-actions {
+    justify-content: center;
+  }
+  
+  .dashboard-cards {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .dashboard-card {
+    padding: 25px;
+  }
+  
+  .stats {
+    gap: 20px;
+  }
+  
+  .stat-number {
+    font-size: 28px;
+  }
+  
+  .card .col-md-4 {
+    border-right: none;
+    border-bottom: 1px solid #e9ecef;
+    padding: 15px;
+  }
+  
+  .card .col-md-4:last-child {
+    border-bottom: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-header {
+    padding: 20px;
+  }
+  
+  .header-content h1 {
+    font-size: 24px;
+  }
+  
+  .faculty-info h4 {
+    font-size: 18px;
+  }
+  
+  .faculty-info p {
+    font-size: 14px;
+  }
+  
+  .dashboard-card {
+    padding: 20px;
+  }
+  
+  .dashboard-card h3 {
+    font-size: 20px;
+  }
+  
+  .dashboard-card p {
+    font-size: 14px;
+  }
+  
+  .stats {
+    gap: 15px;
+  }
+  
+  .stat-number {
+    font-size: 24px;
+  }
+  
+  .btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    min-width: 120px;
+  }
+}

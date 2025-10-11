@@ -3,6 +3,7 @@ import Home from "../Home";
 import FacultyLogin from "../FacultyLogin";
 import FacultyPage from "../FacultyPage";
 import FacultyDashboard from "../FacultyDashboard";
+import RequestsPage from "../Requests/RequestsPage";
 import Signup from "../Auth/Signup";
 import StudentDashboard from "../StudentDashboard/StudentDashboard";
 import LearnMore from "../LearnMore/LearnMore";  // ✅ add this
@@ -23,6 +24,7 @@ const RoutesPage = () => (
     <Route path="/facultylogin" element={<FacultyLogin />} />
     <Route path="/faculty" element={<FacultyPage />} />
     <Route path="/facultydashboard" element={<FacultyDashboard />} />
+    <Route path="/requests" element={<RequestsPage />} />
 
     {/* Developer Routes */}
     <Route path="/developer" element={<DeveloperPage />} />

@@ -1,17 +1,115 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
+import './index.css';
+
+const API_BASE_URL = 'http://localhost:3000/api';
 
 function FacultyDashboard() {
+  const [faculty, setFaculty] = useState(null);
+  const [requestStats, setRequestStats] = useState({
+    pending: 0,
+    received: 0,
+    total: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchFacultyData();
+    fetchRequestStats();
+  }, []);
+
+  const fetchFacultyData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/facultylogin');
+        return;
+      }
+
+      const response = await axios.get(`${API_BASE_URL}/auth/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        setFaculty(response.data.data.faculty);
+      }
+    } catch (error) {
+      console.error('Error fetching faculty data:', error);
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('faculty');
+        navigate('/facultylogin');
+      }
+    }
+  };
+
+  const fetchRequestStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/class-swap/requests`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const requests = response.data.data.swapRequests;
+      const facultyId = JSON.parse(localStorage.getItem('faculty'))._id;
+      
+      const stats = {
+        pending: requests.filter(r => r.status === 'pending' && r.targetFacultyId._id === facultyId).length,
+        received: requests.filter(r => r.targetFacultyId._id === facultyId).length,
+        total: requests.length
+      };
+      
+      setRequestStats(stats);
+    } catch (error) {
+      console.error('Error fetching request stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('faculty');
+    navigate('/facultylogin');
+  };
+
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <div className="loading-spinner">
+          <div className="spinner"></div>
+          <p>Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-vh-100 py-4" style={{ backgroundColor: "#e6f2ff" }}>
+    <div className="dashboard-container">
       <div className="container">
         {/* Header */}
-        <div className="card p-4 shadow-lg rounded-4">
-          <h1 className="mb-3">Dashboard</h1>
-
-          <div className="d-flex justify-content-between align-items-center">
-            <h4 className="mb-0">Hello, P.Sindhu</h4>
-            <button className="btn btn-outline-primary px-4 py-2 rounded-3">
+        <div className="dashboard-header">
+          <div className="header-content">
+            <h1>Faculty Dashboard</h1>
+            <div className="faculty-info">
+              <h4>Hello, {faculty?.name || 'Faculty'}</h4>
+              <p>{faculty?.designation || 'Designation'} | {faculty?.department || 'Department'}</p>
+            </div>
+          </div>
+          <div className="header-actions">
+            <button 
+              className="btn btn-primary"
+              onClick={() => navigate('/faculty')}
+            >
+              View Timetable
+            </button>
+            <button 
+              className="btn btn-secondary"
+              onClick={handleLogout}
+            >
               Logout
             </button>
           </div>
@@ -34,51 +132,57 @@ function FacultyDashboard() {
         </div>
 
         {/* Cards Section */}
-        <div className="row mt-4 g-4">
+        <div className="dashboard-cards">
           {/* Swap Requests */}
-          <div className="col-md-4">
-            <div className="card shadow-sm p-4 rounded-4 border-primary">
-              <h5 className="text-primary mb-3">Swap Your Requests</h5>
-              <p>
-                <strong>3</strong> swap requests currently pending
-              </p>
-              <button className="btn btn-primary-subtle w-100 mb-2 rounded-3">
-                Create Request
-              </button>
-              <button className="btn btn-outline-primary w-100 rounded-3">
-                View All
+          <div className="dashboard-card">
+            <div className="card-icon">📋</div>
+            <h3>Swap Requests</h3>
+            <div className="stats">
+              <div className="stat-item">
+                <span className="stat-number">{requestStats.pending}</span>
+                <span className="stat-label">Pending</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">{requestStats.received}</span>
+                <span className="stat-label">Received</span>
+              </div>
+            </div>
+            <div className="card-actions">
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate('/requests')}
+              >
+                View Requests
               </button>
             </div>
           </div>
 
-          {/* Approved/Rejected */}
-          <div className="col-md-4">
-            <div className="card shadow-sm p-4 rounded-4 border-primary">
-              <h5 className="text-primary mb-3">Approved/Rejected</h5>
-              <p>
-                <strong>5</strong> requests with updated approval status
-              </p>
-              <button className="btn btn-primary-subtle w-100 mb-2 rounded-3">
-                View Status
-              </button>
-              <button className="btn btn-outline-primary w-100 rounded-3">
-                Filter Results
+          {/* Timetable Management */}
+          <div className="dashboard-card">
+            <div className="card-icon">📅</div>
+            <h3>Timetable</h3>
+            <p>Manage your class schedule and view timetables</p>
+            <div className="card-actions">
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate('/faculty')}
+              >
+                View Timetable
               </button>
             </div>
           </div>
 
-          {/* Smart Recommendations */}
-          <div className="col-md-4">
-            <div className="card shadow-sm p-4 rounded-4 border-primary">
-              <h5 className="text-primary mb-3">Smart Recommendations</h5>
-              <p>
-                <strong>8</strong> optimized suggestions available
-              </p>
-              <button className="btn btn-primary-subtle w-100 mb-2 rounded-3">
-                View Suggestions
-              </button>
-              <button className="btn btn-outline-primary w-100 rounded-3">
-                Preferences
+          {/* Notifications */}
+          <div className="dashboard-card">
+            <div className="card-icon">🔔</div>
+            <h3>Notifications</h3>
+            <p>Stay updated with swap requests and updates</p>
+            <div className="card-actions">
+              <button 
+                className="btn btn-secondary"
+                onClick={() => navigate('/requests')}
+              >
+                View Notifications
               </button>
             </div>
           </div>

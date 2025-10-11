@@ -1,6 +1,7 @@
 import ClassSwap from '../Models/ClassSwap.js';
 import Faculty from '../Models/Faculty.js';
 import Timetable from '../Models/Timetable.js';
+import { sendSwapRequestNotification, sendSwapResponseNotification, sendStudentNotification } from '../utils/emailService.js';
 
 // Create a new class swap request
 export const createSwapRequest = async (req, res) => {
@@ -70,6 +71,24 @@ export const createSwapRequest = async (req, res) => {
 
     // Populate the request with faculty details
     await swapRequest.populate('requesterId targetFacultyId', 'name email employeeId');
+
+    // Send email notification to target faculty
+    try {
+      await sendSwapRequestNotification(
+        targetFaculty.email,
+        req.faculty.name,
+        targetFaculty.name,
+        {
+          swapDate: swapRequest.swapDate,
+          reason: swapRequest.reason,
+          requesterClass: requesterClass,
+          targetClass: targetClass
+        }
+      );
+    } catch (emailError) {
+      console.error('Email notification failed:', emailError);
+      // Don't fail the request if email fails
+    }
 
     res.status(201).json({
       success: true,
@@ -201,7 +220,29 @@ export const acceptSwapRequest = async (req, res) => {
       `Your swap request has been accepted by ${req.faculty.name}`
     );
 
+    // Populate faculty details
     await swapRequest.populate('requesterId targetFacultyId', 'name email employeeId');
+
+    // Send email notification to requester
+    try {
+      await sendSwapResponseNotification(
+        swapRequest.requesterId.email,
+        req.faculty.name,
+        'accepted',
+        {
+          responseMessage: message || 'Swap request accepted',
+          requesterClass: swapRequest.requesterClass,
+          targetClass: swapRequest.targetClass
+        }
+      );
+    } catch (emailError) {
+      console.error('Email notification failed:', emailError);
+    }
+
+    // TODO: Update timetables when swap is accepted
+    // This would involve updating the actual timetable records
+    // For now, we'll just log that the swap was accepted
+    console.log('Swap accepted - timetables should be updated');
 
     res.status(200).json({
       success: true,
@@ -247,7 +288,24 @@ export const rejectSwapRequest = async (req, res) => {
       `Your swap request has been rejected by ${req.faculty.name}`
     );
 
+    // Populate faculty details
     await swapRequest.populate('requesterId targetFacultyId', 'name email employeeId');
+
+    // Send email notification to requester
+    try {
+      await sendSwapResponseNotification(
+        swapRequest.requesterId.email,
+        req.faculty.name,
+        'rejected',
+        {
+          responseMessage: message || 'Swap request rejected',
+          requesterClass: swapRequest.requesterClass,
+          targetClass: swapRequest.targetClass
+        }
+      );
+    } catch (emailError) {
+      console.error('Email notification failed:', emailError);
+    }
 
     res.status(200).json({
       success: true,

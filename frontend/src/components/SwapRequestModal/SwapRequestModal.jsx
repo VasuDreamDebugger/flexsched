@@ -7,8 +7,6 @@ const API_BASE_URL = 'http://localhost:3000/api';
 const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
   const [reason, setReason] = useState('');
   const [swapDate, setSwapDate] = useState('');
-  const [availableFaculties, setAvailableFaculties] = useState([]);
-  const [selectedFaculty, setSelectedFaculty] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -18,37 +16,14 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       setSwapDate(tomorrow.toISOString().split('T')[0]);
-      
-      // Fetch available faculties
-      fetchAvailableFaculties();
     }
   }, [isOpen, swapData]);
 
-  const fetchAvailableFaculties = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/class-swap/available-faculties`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: {
-          day: swapData.targetClass.day,
-          periods: swapData.targetClass.period,
-          branch: swapData.targetClass.branch,
-          semester: swapData.targetClass.semester
-        }
-      });
-      setAvailableFaculties(response.data.data.faculties);
-    } catch (error) {
-      console.error('Error fetching available faculties:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!reason.trim() || !swapDate || !selectedFaculty) {
+    if (!reason.trim() || !swapDate) {
       alert('Please fill in all required fields');
       return;
     }
@@ -60,27 +35,30 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
       const requesterClass = {
         day: swapData.requesterClass.day,
         periods: [swapData.requesterClass.period],
-        subject: 'Your Subject', // This should come from the actual timetable data
-        branch: 'Your Branch',
-        semester: 'Your Semester',
-        section: 'Your Section',
-        room: 'Your Room',
-        isLab: false
+        subject: swapData.requesterClass.slot.subject,
+        branch: 'CSE', // You can make this dynamic based on selected class
+        semester: '3rd Year', // You can make this dynamic based on selected class
+        section: 'A', // You can make this dynamic based on selected class
+        room: swapData.requesterClass.slot.room,
+        isLab: swapData.requesterClass.slot.isLab
       };
 
       const targetClass = {
         day: swapData.targetClass.day,
         periods: [swapData.targetClass.period],
-        subject: 'Target Subject', // This should come from the actual timetable data
-        branch: 'Target Branch',
-        semester: 'Target Semester',
-        section: 'Target Section',
-        room: 'Target Room',
-        isLab: false
+        subject: swapData.targetClass.slot.subject,
+        branch: 'CSE', // You can make this dynamic based on selected class
+        semester: '3rd Year', // You can make this dynamic based on selected class
+        section: 'A', // You can make this dynamic based on selected class
+        room: swapData.targetClass.slot.room,
+        isLab: swapData.targetClass.slot.isLab
       };
 
+      // Get target faculty ID from the slot data
+      const targetFacultyId = swapData.targetClass.slot.facultyId;
+
       await axios.post(`${API_BASE_URL}/class-swap/create`, {
-        targetFacultyId: selectedFaculty,
+        targetFacultyId,
         requesterClass,
         targetClass,
         reason,
@@ -95,7 +73,6 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
       // Reset form
       setReason('');
       setSwapDate('');
-      setSelectedFaculty('');
     } catch (error) {
       console.error('Error creating swap request:', error);
       alert('Failed to send swap request. Please try again.');
@@ -107,7 +84,6 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
   const handleClose = () => {
     setReason('');
     setSwapDate('');
-    setSelectedFaculty('');
     onClose();
   };
 
@@ -150,25 +126,6 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
 
           {/* Swap Request Form */}
           <form onSubmit={handleSubmit} className="swap-form">
-            <div className="form-group">
-              <label htmlFor="faculty">Select Faculty to Swap With *</label>
-              <select
-                id="faculty"
-                value={selectedFaculty}
-                onChange={(e) => setSelectedFaculty(e.target.value)}
-                className="form-select"
-                required
-                disabled={loading}
-              >
-                <option value="">Choose a faculty member...</option>
-                {availableFaculties.map(faculty => (
-                  <option key={faculty._id} value={faculty._id}>
-                    {faculty.name} ({faculty.employeeId}) - {faculty.department}
-                  </option>
-                ))}
-              </select>
-              {loading && <div className="loading-text">Loading available faculties...</div>}
-            </div>
 
             <div className="form-group">
               <label htmlFor="swapDate">Swap Date *</label>
