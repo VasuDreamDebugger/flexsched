@@ -69,6 +69,9 @@ const DeveloperPage = () => {
       case 'add-class-timetable':
         navigate('/developer/add-class-timetable');
         break;
+      case 'add-student':
+        navigate('/developer/add-student');
+        break;
       case 'view-faculties':
         navigate('/developer/view-faculties');
         break;
@@ -167,6 +170,12 @@ const DeveloperPage = () => {
             <p>Create timetables for specific classes (year/branch/section)</p>
           </div>
 
+        <div className="option-card" onClick={() => handleOptionClick('add-student')}>
+          <div className="option-icon">🎓</div>
+          <h3>Add Student</h3>
+          <p>Create a student or bulk generate by branch/year/section</p>
+        </div>
+
           <div className="option-card" onClick={() => handleOptionClick('view-faculties')}>
             <div className="option-icon">👥</div>
             <h3>View Faculties</h3>
@@ -179,11 +188,7 @@ const DeveloperPage = () => {
             <p>View and manage all timetables</p>
           </div>
 
-          <div className="option-card" onClick={() => navigate('/')}>
-            <div className="option-icon">🏠</div>
-            <h3>Back to Home</h3>
-            <p>Return to the main application</p>
-          </div>
+        
         </div>
       </div>
     </div>

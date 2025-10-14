@@ -1,10 +1,12 @@
 import Timetable from '../Models/Timetable.js';
 import Faculty from '../Models/Faculty.js';
+import { getClassTimetable as svcGetClassTimetable, getFacultyTimetable as svcGetFacultyTimetable, updateClassPeriod as svcUpdateClassPeriod, updateFacultyPeriod as svcUpdateFacultyPeriod } from '../services/timetableSync.js';
 
 // Get faculty's own timetable
 export const getFacultyTimetable = async (req, res) => {
   try {
     const facultyId = req.faculty._id;
+    const variant = req.query.variant === 'default' ? 'default' : 'current';
 
     const timetable = await Timetable.findOne({
       facultyId: facultyId,
@@ -18,9 +20,14 @@ export const getFacultyTimetable = async (req, res) => {
       });
     }
 
+    const payload = {
+      ...timetable.toObject(),
+      timeSlots: variant === 'default' && timetable.defaultTimeSlots?.length ? timetable.defaultTimeSlots : timetable.timeSlots
+    };
+
     res.status(200).json({
       success: true,
-      data: { timetable }
+      data: { timetable: payload }
     });
   } catch (error) {
     console.error('Get faculty timetable error:', error);
@@ -30,11 +37,10 @@ export const getFacultyTimetable = async (req, res) => {
     });
   }
 };
-
 // Get class timetables by year, branch, and section
 export const getClassTimetables = async (req, res) => {
   try {
-    const { year, branch, section } = req.query;
+    const { year, branch, section, variant, academicYear, semester } = req.query;
 
     if (!year || !branch || !section) {
       return res.status(400).json({
@@ -43,7 +49,13 @@ export const getClassTimetables = async (req, res) => {
       });
     }
 
-    // Find all timetables for the specified class
+    // New model path when academicYear & semester provided
+    if (academicYear && semester) {
+      const data = await svcGetClassTimetable(branch, year, section, academicYear, semester);
+      return res.status(200).json({ success: true, data });
+    }
+
+    // Find all timetables for the specified class (legacy)
     const timetables = await Timetable.find({
       'timeSlots.branch': branch,
       'timeSlots.semester': year,
@@ -54,7 +66,8 @@ export const getClassTimetables = async (req, res) => {
     const classTimetables = {};
     
     timetables.forEach(timetable => {
-      timetable.timeSlots.forEach(slot => {
+      const slots = (variant === 'default' && timetable.defaultTimeSlots?.length) ? timetable.defaultTimeSlots : timetable.timeSlots;
+      slots.forEach(slot => {
         if (slot.branch === branch && slot.semester === year) {
           const sectionKey = slot.section || 'default';
           
@@ -88,6 +101,54 @@ export const getClassTimetables = async (req, res) => {
       success: false,
       message: 'Internal server error'
     });
+  }
+};
+
+// V2 helpers routed endpoints
+export const getClassTimetableV2 = async (req, res) => {
+  try {
+    const { branch, year, section, academicYear, semester } = req.query;
+    const data = await svcGetClassTimetable(branch, year, section, academicYear, semester);
+    return res.status(200).json({ success: true, data });
+  } catch (e) {
+    console.error('getClassTimetableV2 error:', e);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+export const getFacultyTimetableV2 = async (req, res) => {
+  try {
+    const { academicYear, semester } = req.query;
+    const facultyId = req.faculty._id;
+    const data = await svcGetFacultyTimetable(facultyId, academicYear, semester);
+    return res.status(200).json({ success: true, data });
+  } catch (e) {
+    console.error('getFacultyTimetableV2 error:', e);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+export const updateClassPeriodV2 = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { day, period, newSlot } = req.body;
+    const updated = await svcUpdateClassPeriod(classId, day, period, newSlot, req?.admin?._id || req?.faculty?._id);
+    return res.status(200).json({ success: true, data: { classTimetable: updated } });
+  } catch (e) {
+    console.error('updateClassPeriodV2 error:', e);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+export const updateFacultyPeriodV2 = async (req, res) => {
+  try {
+    const facultyId = req.faculty._id;
+    const { academicYear, semester, day, period, newSlot } = req.body;
+    const updated = await svcUpdateFacultyPeriod(facultyId, academicYear, semester, day, period, newSlot);
+    return res.status(200).json({ success: true, data: { facultyTimetable: updated } });
+  } catch (e) {
+    console.error('updateFacultyPeriodV2 error:', e);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 

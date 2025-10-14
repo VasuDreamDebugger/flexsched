@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import seedDatabase from "./utils/seedData.js";
+import seedClassTimetable from "./utils/seedClassTimetable.js";
 
 // Load environment variables
 dotenv.config();
@@ -14,6 +15,7 @@ const runSeed = async () => {
     console.log("Connected to MongoDB");
 
     await seedDatabase();
+    await seedClassTimetable();
 
     console.log("Seeding completed successfully!");
     process.exit(0);

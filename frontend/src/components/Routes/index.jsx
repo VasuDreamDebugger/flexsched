@@ -12,6 +12,7 @@ import DeveloperPage from "../Developer/DeveloperPage";
 import AddFaculty from "../Developer/AddFaculty";
 import AddFacultyTimetable from "../Developer/AddFacultyTimetable";
 import AddClassTimetable from "../Developer/AddClassTimetable";
+import AddStudent from "../Developer/AddStudent";
 
 const RoutesPage = () => (
   <Routes>
@@ -31,6 +32,7 @@ const RoutesPage = () => (
     <Route path="/developer/add-faculty" element={<AddFaculty />} />
     <Route path="/developer/add-faculty-timetable" element={<AddFacultyTimetable />} />
     <Route path="/developer/add-class-timetable" element={<AddClassTimetable />} />
+    <Route path="/developer/add-student" element={<AddStudent />} />
 
     {/* Student Route */}
     <Route path="/students" element={<Students />} /> {/* ✅ lowercase */}

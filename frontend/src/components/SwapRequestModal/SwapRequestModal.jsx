@@ -24,7 +24,7 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
     e.preventDefault();
     
     if (!reason.trim() || !swapDate) {
-      alert('Please fill in all required fields');
+      alert('Please fill in all required fields kl');
       return;
     }
 
@@ -36,34 +36,71 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
         day: swapData.requesterClass.day,
         periods: [swapData.requesterClass.period],
         subject: swapData.requesterClass.slot.subject,
-        branch: 'CSE', // You can make this dynamic based on selected class
-        semester: '3rd Year', // You can make this dynamic based on selected class
-        section: 'A', // You can make this dynamic based on selected class
+        branch: swapData.selectedClass?.branch || 'CSE',
+        semester: swapData.selectedClass?.year || '3rd Year',
+        section: swapData.selectedClass?.section || 'A',
         room: swapData.requesterClass.slot.room,
-        isLab: swapData.requesterClass.slot.isLab
+        isLab: !!swapData.requesterClass.slot.isLab
       };
 
       const targetClass = {
         day: swapData.targetClass.day,
         periods: [swapData.targetClass.period],
         subject: swapData.targetClass.slot.subject,
-        branch: 'CSE', // You can make this dynamic based on selected class
-        semester: '3rd Year', // You can make this dynamic based on selected class
-        section: 'A', // You can make this dynamic based on selected class
+        branch: swapData.selectedClass?.branch || 'CSE',
+        semester: swapData.selectedClass?.year || '3rd Year',
+        section: swapData.selectedClass?.section || 'A',
         room: swapData.targetClass.slot.room,
-        isLab: swapData.targetClass.slot.isLab
+        isLab: !!swapData.targetClass.slot.isLab
       };
 
       // Get target faculty ID from the slot data
       const targetFacultyId = swapData.targetClass.slot.facultyId;
+      if (!targetFacultyId) {
+        alert('Could not determine target faculty. Please select a slot that has an assigned faculty.');
+        setSubmitting(false);
+        return;
+      }
 
-      await axios.post(`${API_BASE_URL}/class-swap/create`, {
-        targetFacultyId,
-        requesterClass,
-        targetClass,
-        reason,
-        swapDate
-      }, {
+      // New compact payload (class-centric). We also send branch/year/section to allow backend lookup if ids are not provided.
+      console.log('Submitting swap:', {
+        yourClassId: swapData.requesterClass.classTimetableId,
+        requestedClassId: swapData.targetClass.classTimetableId,
+        requesterClass: swapData.requesterClass,
+        targetClass: swapData.targetClass
+      });
+      
+      const compactPayload = {
+        yourClassId: swapData.requesterClass.classTimetableId,
+        requestedClassId: swapData.targetClass.classTimetableId,
+        yourDay: swapData.requesterClass.day,
+        yourPeriod: Number(swapData.requesterClass.period),
+        requestedDay: swapData.targetClass.day,
+        requestedPeriod: Number(swapData.targetClass.period),
+        branch: swapData.selectedClass?.branch,
+        year: swapData.selectedClass?.year,
+        section: swapData.selectedClass?.section,
+        swapDate,
+        reason
+      };
+         
+      // const compactPayload = {
+      //   yourClassId: swapData.classTimetableId || null,
+      //   requestedClassId: swapData.classTimetableId || null,
+      //   yourDay: swapData.requesterClass.day,
+      //   yourPeriod: Number(swapData.requesterClass.period),
+      //   requestedDay: swapData.targetClass.day,
+      //   requestedPeriod: Number(swapData.targetClass.period),
+      //   branch: swapData.selectedClass?.branch,
+      //   year: swapData.selectedClass?.year,
+      //   section: swapData.selectedClass?.section,
+      //   swapDate,
+      //   reason
+      // };
+
+      
+
+      await axios.post(`${API_BASE_URL}/class-swap/create`, compactPayload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -149,7 +186,7 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
                 className="form-textarea"
                 placeholder="Please provide a reason for this class swap request..."
                 rows="4"
-                required
+                
               />
               <div className="char-count">{reason.length}/500</div>
             </div>

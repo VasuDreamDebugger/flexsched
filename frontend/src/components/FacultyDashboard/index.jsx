@@ -18,7 +18,18 @@ function FacultyDashboard() {
 
   useEffect(() => {
     fetchFacultyData();
-    fetchRequestStats();
+  }, []);
+
+  // Refresh stats on interval and when window/tab gains focus
+  useEffect(() => {
+    const load = () => fetchRequestStats();
+    load();
+    const intervalId = setInterval(load, 10000); // refresh every 10s
+    window.addEventListener('focus', load);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', load);
+    };
   }, []);
 
   const fetchFacultyData = async () => {
@@ -54,12 +65,15 @@ function FacultyDashboard() {
       });
 
       const requests = response.data.data.swapRequests;
-      const facultyId = JSON.parse(localStorage.getItem('faculty'))._id;
+      const facultyId = (JSON.parse(localStorage.getItem('faculty')) || faculty || {})._id;
       
+      const myRequests = requests.filter(r => r.requesterId && (r.requesterId._id === facultyId || r.requesterId === facultyId));
+      const receivedRequests = requests.filter(r => r.targetFacultyId && (r.targetFacultyId._id === facultyId || r.targetFacultyId === facultyId));
+
       const stats = {
-        pending: requests.filter(r => r.status === 'pending' && r.targetFacultyId._id === facultyId).length,
-        received: requests.filter(r => r.targetFacultyId._id === facultyId).length,
-        total: requests.length
+        pending: receivedRequests.filter(r => r.status === 'pending').length,
+        received: receivedRequests.length,
+        total: myRequests.length
       };
       
       setRequestStats(stats);

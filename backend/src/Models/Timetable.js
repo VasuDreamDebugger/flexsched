@@ -93,6 +93,8 @@ const timetableSchema = new mongoose.Schema({
     trim: true
   },
   timeSlots: [timeSlotSchema],
+  // default snapshot used for comparison/display
+  defaultTimeSlots: [timeSlotSchema],
   isClassTimetable: {
     type: Boolean,
     default: false

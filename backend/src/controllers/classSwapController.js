@@ -2,26 +2,123 @@ import ClassSwap from '../Models/ClassSwap.js';
 import Faculty from '../Models/Faculty.js';
 import Timetable from '../Models/Timetable.js';
 import { sendSwapRequestNotification, sendSwapResponseNotification, sendStudentNotification } from '../utils/emailService.js';
+import ClassTimetable from '../Models/ClassTimetable.js';
+import FacultyTimetable from '../Models/FacultyTimetable.js';
+import Student from '../Models/Student.js';
+import { syncFacultyToClass } from '../services/timetableSync.js';
 
 // Create a new class swap request
 export const createSwapRequest = async (req, res) => {
   try {
-    const {
-      targetFacultyId,
-      requesterClass,
-      targetClass,
-      reason,
-      swapDate
-    } = req.body;
+    console.log('[swap:create] incoming', {
+      keys: Object.keys(req.body || {}),
+      hasRequesterClass: !!req.body?.requesterClass,
+      hasTargetClass: !!req.body?.targetClass
+    });
+
+    // Migration-safe payload parsing: support new and old formats
+    let targetFacultyId;
+    let requesterClass;
+    let targetClass;
+    const reason = req.body?.reason;
+    const swapDate = req.body?.swapDate;
+
+    const isNewFormat = !!(req.body?.yourClassId && req.body?.requestedClassId);
+    if (isNewFormat) {
+      const { yourClassId, requestedClassId, yourDay, yourPeriod, requestedDay, requestedPeriod } = req.body;
+      if (!yourClassId || !requestedClassId) {
+        return res.status(400).json({ success: false, message: 'yourClassId and requestedClassId are required' });
+      }
+      if (!yourDay || !yourPeriod || !requestedDay || !requestedPeriod) {
+        return res.status(400).json({ success: false, message: 'yourDay/yourPeriod/requestedDay/requestedPeriod are required in new format' });
+      }
+      
+      // Handle case where both classes are from the same ClassTimetable (same classTimetableId)
+      console.log('[swap:create] yourClassId:', yourClassId);
+console.log('[swap:create] requestedClassId:', requestedClassId);
+
+      let yourClassDoc, requestedClassDoc;
+      if (yourClassId === requestedClassId) {
+        // Both classes are from the same ClassTimetable document
+        yourClassDoc = await ClassTimetable.findById(yourClassId);
+        requestedClassDoc = yourClassDoc; // Same document
+      } else {
+        // Different ClassTimetable documents
+        yourClassDoc = await ClassTimetable.findById(yourClassId);
+        requestedClassDoc = await ClassTimetable.findById(requestedClassId);
+      }
+      
+      console.log('[swap:create] yourClassDoc:', yourClassDoc);
+      console.log('[swap:create] requestedClassDoc:', requestedClassDoc);
+
+      if (!yourClassDoc || !requestedClassDoc) {
+        return res.status(406).json({ success: false, message: 'ClassTimetable not found for provided ids' });
+      }
+      // build requesterClass from yourClassDoc (prefer updated version if present)
+      const yourVersion = (yourClassDoc.versions || []).find(v => v.label === 'updated') || (yourClassDoc.versions || []).find(v => v.label === 'default');
+      const reqSlot = yourVersion?.timeSlots?.find(s => s.day === yourDay && s.period === Number(yourPeriod));
+      if (!reqSlot) {
+        return res.status(400).json({ success: false, message: 'No matching slot found in your class timetable for provided day/period' });
+      }
+      const requestedVersion = (requestedClassDoc.versions || []).find(v => v.label === 'updated') || (requestedClassDoc.versions || []).find(v => v.label === 'default');
+      const tgtSlot = requestedVersion?.timeSlots?.find(s => s.day === requestedDay && s.period === Number(requestedPeriod));
+      if (!tgtSlot) {
+        return res.status(400).json({ success: false, message: 'No matching slot found in requested class timetable for provided day/period' });
+      }
+      // Compose legacy-shaped objects to reuse downstream validation and swap flow
+      requesterClass = {
+        day: yourDay,
+        periods: [Number(yourPeriod)],
+        subject: reqSlot.subject,
+        branch: yourClassDoc.branch,
+        semester: yourClassDoc.year,
+        section: yourClassDoc.section,
+        room: reqSlot.room,
+        isLab: !!reqSlot.isLab
+      };
+      targetClass = {
+        day: requestedDay,
+        periods: [Number(requestedPeriod)],
+        subject: tgtSlot.subject,
+        branch: requestedClassDoc.branch,
+        semester: requestedClassDoc.year,
+        section: requestedClassDoc.section,
+        room: tgtSlot.room,
+        isLab: !!tgtSlot.isLab
+      };
+      // Prefer facultyId embedded in class-centric slot, else derive from FacultyTimetable
+      targetFacultyId = tgtSlot?.facultyId;
+      if (!targetFacultyId) {
+        const ft = await FacultyTimetable.findOne({
+          academicYear: requestedClassDoc.academicYear,
+          semester: requestedClassDoc.semester,
+          'timeSlots.day': requestedDay,
+          'timeSlots.period': Number(requestedPeriod),
+          'timeSlots.branch': requestedClassDoc.branch,
+          'timeSlots.year': requestedClassDoc.year,
+          'timeSlots.section': requestedClassDoc.section
+        }).select('facultyId');
+        targetFacultyId = ft?.facultyId;
+      }
+    } else {
+      // Old format
+      targetFacultyId = req.body?.targetFacultyId;
+      requesterClass = req.body?.requesterClass;
+      targetClass = req.body?.targetClass;
+    }
 
     const requesterId = req.faculty._id;
 
     // Validate target faculty exists
-    const targetFaculty = await Faculty.findById(targetFacultyId);
+    if (!reason || !swapDate) {
+      return res.status(400).json({ success: false, message: 'reason and swapDate are required' });
+    }
+
+    const targetFaculty = targetFacultyId ? await Faculty.findById(targetFacultyId) : null;
     if (!targetFaculty) {
       return res.status(404).json({
         success: false,
-        message: 'Target faculty not found'
+        message: 'Target faculty not found for requested slot. Ensure class timetable slots are linked to faculty or FacultyTimetable exists for that slot.'
       });
     }
 
@@ -63,11 +160,13 @@ export const createSwapRequest = async (req, res) => {
     await swapRequest.save();
 
     // Add notification for target faculty
-    await swapRequest.addNotification(
-      targetFacultyId,
-      'swap_request',
-      `New class swap request from ${req.faculty.name}`
-    );
+    swapRequest.notifications.push({
+      sentTo: targetFacultyId,
+      notificationType: 'swap_request',
+      message: `New class swap request from ${req.faculty.name}`,
+      createdAt: new Date()
+    });
+    await swapRequest.save();
 
     // Populate the request with faculty details
     await swapRequest.populate('requesterId targetFacultyId', 'name email employeeId');
@@ -214,11 +313,13 @@ export const acceptSwapRequest = async (req, res) => {
     await swapRequest.accept(message || 'Swap request accepted');
 
     // Add notification for requester
-    await swapRequest.addNotification(
-      swapRequest.requesterId,
-      'swap_accepted',
-      `Your swap request has been accepted by ${req.faculty.name}`
-    );
+    swapRequest.notifications.push({
+      sentTo: swapRequest.requesterId,
+      notificationType: 'swap_accepted',
+      message: `Your swap request has been accepted by ${req.faculty.name}`,
+      createdAt: new Date()
+    });
+    await swapRequest.save();
 
     // Populate faculty details
     await swapRequest.populate('requesterId targetFacultyId', 'name email employeeId');
@@ -239,10 +340,98 @@ export const acceptSwapRequest = async (req, res) => {
       console.error('Email notification failed:', emailError);
     }
 
-    // TODO: Update timetables when swap is accepted
-    // This would involve updating the actual timetable records
-    // For now, we'll just log that the swap was accepted
-    console.log('Swap accepted - timetables should be updated');
+  // Update timetables when swap is accepted: swap matching timeSlots between both faculties
+  try {
+    const requesterTimetable = await Timetable.findOne({ facultyId: swapRequest.requesterId, isActive: true });
+    const targetTimetable = await Timetable.findOne({ facultyId: swapRequest.targetFacultyId, isActive: true });
+
+    if (requesterTimetable && targetTimetable) {
+      const sameArray = (a = [], b = []) => a.length === b.length && a.every((v, i) => v === b[i]);
+      const findSlotIndex = (tt, cls) => {
+        // Try exact match by day and periods array
+        let idx = tt.timeSlots.findIndex(s => s.day === cls.day && sameArray(s.periods, cls.periods));
+        if (idx !== -1) return idx;
+        // If single period requested, find a slot that contains that period on the same day
+        if (cls.periods && cls.periods.length === 1) {
+          const p = cls.periods[0];
+          idx = tt.timeSlots.findIndex(s => s.day === cls.day && Array.isArray(s.periods) && s.periods.includes(p));
+          return idx;
+        }
+        return -1;
+      };
+
+      const rIndex = findSlotIndex(requesterTimetable, swapRequest.requesterClass);
+      const tIndex = findSlotIndex(targetTimetable, swapRequest.targetClass);
+
+      if (rIndex !== -1 && tIndex !== -1) {
+        // Swap descriptive fields
+        const rSlot = requesterTimetable.timeSlots[rIndex];
+        const tSlot = targetTimetable.timeSlots[tIndex];
+
+        const temp = {
+          subject: rSlot.subject,
+          branch: rSlot.branch,
+          semester: rSlot.semester,
+          room: rSlot.room,
+          isLab: rSlot.isLab,
+          isTheory: rSlot.isTheory
+        };
+
+        rSlot.subject = tSlot.subject;
+        rSlot.branch = tSlot.branch;
+        rSlot.semester = tSlot.semester;
+        rSlot.room = tSlot.room;
+        rSlot.isLab = tSlot.isLab;
+        rSlot.isTheory = tSlot.isTheory;
+
+        tSlot.subject = temp.subject;
+        tSlot.branch = temp.branch;
+        tSlot.semester = temp.semester;
+        tSlot.room = temp.room;
+        tSlot.isLab = temp.isLab;
+        tSlot.isTheory = temp.isTheory;
+
+        requesterTimetable.markModified('timeSlots');
+        targetTimetable.markModified('timeSlots');
+        await requesterTimetable.save();
+        await targetTimetable.save();
+
+        // Also sync these faculty timetable changes back into ClassTimetable (updated version)
+        await Promise.all([
+          syncFacultyToClass(requesterTimetable),
+          syncFacultyToClass(targetTimetable)
+        ]);
+      } else {
+        console.warn('Could not locate exact matching timeSlots to swap for one or both timetables');
+      }
+    } else {
+      console.warn('One or both faculty timetables not found; skipping timetable swap');
+    }
+  } catch (swapErr) {
+    console.error('Timetable swap update failed:', swapErr);
+  }
+
+  // Notify students for the target class if emails are available
+  try {
+    const branch = swapRequest.targetClass.branch;
+    const section = swapRequest.targetClass.section;
+    // Convert semester/year label to number if needed (supports formats like "3rd Year")
+    const yearNumber = typeof swapRequest.targetClass.semester === 'number'
+      ? swapRequest.targetClass.semester
+      : (parseInt(String(swapRequest.targetClass.semester).match(/\d+/)?.[0] || '0', 10) || 0);
+
+    const students = await Student.find({ branch, section, year: yearNumber, isActive: true }).select('email');
+    const studentEmails = students.map(s => s.email).filter(Boolean);
+    if (studentEmails.length > 0) {
+      await sendStudentNotification(studentEmails, {
+        swapDate: swapRequest.swapDate,
+        requesterClass: swapRequest.requesterClass,
+        targetClass: swapRequest.targetClass
+      }, 'swap');
+    }
+  } catch (studErr) {
+    console.error('Student notification failed:', studErr);
+  }
 
     res.status(200).json({
       success: true,
@@ -282,11 +471,13 @@ export const rejectSwapRequest = async (req, res) => {
     await swapRequest.reject(message || 'Swap request rejected');
 
     // Add notification for requester
-    await swapRequest.addNotification(
-      swapRequest.requesterId,
-      'swap_rejected',
-      `Your swap request has been rejected by ${req.faculty.name}`
-    );
+    swapRequest.notifications.push({
+      sentTo: swapRequest.requesterId,
+      notificationType: 'swap_rejected',
+      message: `Your swap request has been rejected by ${req.faculty.name}`,
+      createdAt: new Date()
+    });
+    await swapRequest.save();
 
     // Populate faculty details
     await swapRequest.populate('requesterId targetFacultyId', 'name email employeeId');
@@ -344,11 +535,13 @@ export const cancelSwapRequest = async (req, res) => {
     await swapRequest.cancel();
 
     // Add notification for target faculty
-    await swapRequest.addNotification(
-      swapRequest.targetFacultyId,
-      'swap_cancelled',
-      `Swap request has been cancelled by ${req.faculty.name}`
-    );
+    swapRequest.notifications.push({
+      sentTo: swapRequest.targetFacultyId,
+      notificationType: 'swap_cancelled',
+      message: `Swap request has been cancelled by ${req.faculty.name}`,
+      createdAt: new Date()
+    });
+    await swapRequest.save();
 
     await swapRequest.populate('requesterId targetFacultyId', 'name email employeeId');
 
@@ -396,11 +589,13 @@ export const completeSwapRequest = async (req, res) => {
       ? swapRequest.targetFacultyId 
       : swapRequest.requesterId;
 
-    await swapRequest.addNotification(
-      otherFacultyId,
-      'swap_completed',
-      `Swap request has been marked as completed`
-    );
+    swapRequest.notifications.push({
+      sentTo: otherFacultyId,
+      notificationType: 'swap_completed',
+      message: `Swap request has been marked as completed`,
+      createdAt: new Date()
+    });
+    await swapRequest.save();
 
     await swapRequest.populate('requesterId targetFacultyId', 'name email employeeId');
 

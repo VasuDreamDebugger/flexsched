@@ -1,12 +1,13 @@
 import nodemailer from 'nodemailer';
+import { emailConfig } from '../config/emailConfig.js';
 
 // Simple email service using Gmail SMTP (free)
 const createTransporter = () => {
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: process.env.EMAIL_USER || 'your-email@gmail.com',
-      pass: process.env.EMAIL_PASS || 'your-app-password'
+      user: emailConfig.user,
+      pass: emailConfig.pass
     }
   });
 };
@@ -16,7 +17,7 @@ export const sendSwapRequestNotification = async (toEmail, requesterName, target
     const transporter = createTransporter();
     
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'your-email@gmail.com',
+      from: emailConfig.user,
       to: toEmail,
       subject: `Class Swap Request from ${requesterName}`,
       html: `
@@ -54,7 +55,7 @@ export const sendSwapRequestNotification = async (toEmail, requesterName, target
           </div>
           
           <div style="text-align: center; margin: 20px 0;">
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/requests" 
+            <a href="${emailConfig.frontendUrl}/requests" 
                style="background: linear-gradient(135deg, #28a9dc, #1c89b1); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
               View & Respond to Request
             </a>
@@ -84,7 +85,7 @@ export const sendSwapResponseNotification = async (toEmail, responderName, respo
     const transporter = createTransporter();
     
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'your-email@gmail.com',
+      from: emailConfig.user,
       to: toEmail,
       subject: `Swap Request ${response === 'accepted' ? 'Accepted' : 'Rejected'} by ${responderName}`,
       html: `
@@ -106,7 +107,7 @@ export const sendSwapResponseNotification = async (toEmail, responderName, respo
           </div>
           
           <div style="text-align: center; margin: 20px 0;">
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/requests" 
+            <a href="${emailConfig.frontendUrl}/requests" 
                style="background: linear-gradient(135deg, #28a9dc, #1c89b1); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
               View All Requests
             </a>
@@ -138,7 +139,7 @@ export const sendStudentNotification = async (studentEmails, swapDetails, action
     const transporter = createTransporter();
     
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'your-email@gmail.com',
+      from: emailConfig.user,
       to: studentEmails.join(', '),
       subject: `Class Schedule Update - ${action === 'swap' ? 'Class Swap' : 'Schedule Change'}`,
       html: `
@@ -178,3 +179,4 @@ export const sendStudentNotification = async (studentEmails, swapDetails, action
     return false;
   }
 };
+

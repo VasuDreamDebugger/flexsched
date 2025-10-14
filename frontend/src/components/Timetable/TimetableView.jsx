@@ -6,6 +6,7 @@ const API_BASE_URL = 'http://localhost:3000/api';
 
 const TimetableView = ({ faculty, onSwapRequest }) => {
   const [facultyTimetable, setFacultyTimetable] = useState(null);
+  const [timetableVariant, setTimetableVariant] = useState('current'); // 'current' | 'default'
   const [availableClasses, setAvailableClasses] = useState({});
   const [selectedClass, setSelectedClass] = useState({
     year: '',
@@ -30,7 +31,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
   useEffect(() => {
     fetchFacultyTimetable();
     fetchAvailableClasses();
-  }, []);
+  }, [timetableVariant]);
 
   useEffect(() => {
     if (selectedClass.year && selectedClass.branch && selectedClass.section) {
@@ -43,6 +44,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API_BASE_URL}/timetable/faculty`, {
         headers: { Authorization: `Bearer ${token}` }
+        , params: { variant: timetableVariant }
       });
       setFacultyTimetable(response.data.data.timetable);
     } catch (error) {
@@ -71,7 +73,8 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
         params: {
           year: selectedClass.year,
           branch: selectedClass.branch,
-          section: selectedClass.section
+          section: selectedClass.section,
+          variant: timetableVariant
         }
       });
       
@@ -135,12 +138,18 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
   const getSampleClassTimetable = () => {
     // Real faculty IDs from database
     const facultyIds = {
-      "Dr. P. Sindhu": "68ea3064e63c40c60c310363",
-      "Dr. R. Kumar": "68ea3065e63c40c60c310365", 
-      "Dr. S. Reddy": "68ea3066e63c40c60c310367",
-      "Dr. A. Sharma": "68ea3067e63c40c60c310369",
-      "Dr. M. Patel": "68ea3069e63c40c60c31036b",
-      "Dr. V. Rao": "68ea30b12dc46ef2b04b1886"
+      "Dr. P. Sindhu": "68ed439f294d32bcd4ce617b",
+      "Dr. R. Kumar": "68ed43a0294d32bcd4ce617d", 
+      "Dr. S. Reddy": "68ed43a1294d32bcd4ce617f",
+      "Dr. A. Sharma": "68ed43a1294d32bcd4ce6181",
+      "Dr. M. Patel": "68ed43a2294d32bcd4ce6183"
+    };
+
+    // Real ClassTimetable IDs from seeded database
+    const classTimetableIds = {
+      "CSE-3rd Year-A": "68ed43a2294d32bcd4ce61c5",
+      "CSE-3rd Year-B": "68ed43a2294d32bcd4ce61c6",
+      "ECE-3rd Year-C": "68ed43a2294d32bcd4ce61c7"
     };
 
     const sampleData = {
@@ -192,29 +201,36 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
       "ECE": {
         "3rd Year": {
           "C": [
-            { day: "Monday", periods: [1, 2], subject: "Digital Electronics", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-101", isLab: false },
-            { day: "Monday", periods: [4], subject: "Signals & Systems", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-102", isLab: false },
-            { day: "Monday", periods: [5, 6], subject: "Digital Electronics Lab", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-Lab-1", isLab: true },
-            { day: "Tuesday", periods: [1], subject: "Communication Systems", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-103", isLab: false },
-            { day: "Tuesday", periods: [2, 3], subject: "VLSI Design", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-104", isLab: false },
-            { day: "Tuesday", periods: [4, 5, 6], subject: "Signals & Systems Lab", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-Lab-2", isLab: true },
-            { day: "Wednesday", periods: [1, 2], subject: "Digital Electronics", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-101", isLab: false },
-            { day: "Wednesday", periods: [3], subject: "Communication Systems", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-103", isLab: false },
-            { day: "Wednesday", periods: [5, 6], subject: "VLSI Design Lab", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-Lab-1", isLab: true },
-            { day: "Thursday", periods: [1, 2, 3], subject: "Communication Systems Lab", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-Lab-2", isLab: true },
-            { day: "Thursday", periods: [4], subject: "Signals & Systems", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-102", isLab: false },
-            { day: "Friday", periods: [1], subject: "VLSI Design", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-104", isLab: false },
-            { day: "Friday", periods: [2, 3], subject: "Digital Electronics", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-101", isLab: false },
-            { day: "Friday", periods: [4, 5, 6], subject: "Microprocessor Lab", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-Lab-1", isLab: true },
-            { day: "Saturday", periods: [1, 2], subject: "Communication Systems", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-103", isLab: false },
-            { day: "Saturday", periods: [3], subject: "Signals & Systems", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-102", isLab: false },
-            { day: "Saturday", periods: [4, 5, 6], subject: "Embedded Systems Lab", faculty: "Dr. V. Rao", facultyId: facultyIds["Dr. V. Rao"], room: "ECE-Lab-2", isLab: true }
+            { day: "Monday", periods: [1, 2], subject: "Digital Electronics", faculty: "Dr. A. Sharma", facultyId: facultyIds["Dr. A. Sharma"], room: "ECE-101", isLab: false },
+            { day: "Monday", periods: [4], subject: "Signals & Systems", faculty: "Dr. R. Kumar", facultyId: facultyIds["Dr. R. Kumar"], room: "ECE-102", isLab: false },
+            { day: "Monday", periods: [5, 6], subject: "Digital Electronics Lab", faculty: "Dr. A. Sharma", facultyId: facultyIds["Dr. A. Sharma"], room: "ECE-Lab-1", isLab: true },
+            { day: "Tuesday", periods: [1], subject: "Communication Systems", faculty: "Dr. S. Reddy", facultyId: facultyIds["Dr. S. Reddy"], room: "ECE-103", isLab: false },
+            { day: "Tuesday", periods: [2, 3], subject: "VLSI Design", faculty: "Dr. M. Patel", facultyId: facultyIds["Dr. M. Patel"], room: "ECE-104", isLab: false },
+            { day: "Wednesday", periods: [1, 2], subject: "Digital Electronics", faculty: "Dr. A. Sharma", facultyId: facultyIds["Dr. A. Sharma"], room: "ECE-101", isLab: false },
+            { day: "Wednesday", periods: [3], subject: "Communication Systems", faculty: "Dr. S. Reddy", facultyId: facultyIds["Dr. S. Reddy"], room: "ECE-103", isLab: false },
+            { day: "Wednesday", periods: [5, 6], subject: "VLSI Design Lab", faculty: "Dr. M. Patel", facultyId: facultyIds["Dr. M. Patel"], room: "ECE-Lab-1", isLab: true },
+            { day: "Thursday", periods: [1, 2, 3], subject: "Communication Systems Lab", faculty: "Dr. S. Reddy", facultyId: facultyIds["Dr. S. Reddy"], room: "ECE-Lab-2", isLab: true },
+            { day: "Thursday", periods: [4], subject: "Signals & Systems", faculty: "Dr. R. Kumar", facultyId: facultyIds["Dr. R. Kumar"], room: "ECE-102", isLab: false },
+            { day: "Friday", periods: [1], subject: "VLSI Design", faculty: "Dr. M. Patel", facultyId: facultyIds["Dr. M. Patel"], room: "ECE-104", isLab: false },
+            { day: "Friday", periods: [2, 3], subject: "Digital Electronics", faculty: "Dr. A. Sharma", facultyId: facultyIds["Dr. A. Sharma"], room: "ECE-101", isLab: false },
+            { day: "Friday", periods: [4, 5, 6], subject: "Microprocessor Lab", faculty: "Dr. P. Sindhu", facultyId: facultyIds["Dr. P. Sindhu"], room: "ECE-Lab-1", isLab: true },
+            { day: "Saturday", periods: [1, 2], subject: "Communication Systems", faculty: "Dr. S. Reddy", facultyId: facultyIds["Dr. S. Reddy"], room: "ECE-103", isLab: false },
+            { day: "Saturday", periods: [3], subject: "Signals & Systems", faculty: "Dr. R. Kumar", facultyId: facultyIds["Dr. R. Kumar"], room: "ECE-102", isLab: false },
+            { day: "Saturday", periods: [4, 5, 6], subject: "Embedded Systems Lab", faculty: "Dr. P. Sindhu", facultyId: facultyIds["Dr. P. Sindhu"], room: "ECE-Lab-2", isLab: true }
           ]
         }
       }
     };
 
-    return sampleData[selectedClass.branch]?.[selectedClass.year]?.[selectedClass.section] || [];
+    const timetableData = sampleData[selectedClass.branch]?.[selectedClass.year]?.[selectedClass.section] || [];
+    const classKey = `${selectedClass.branch}-${selectedClass.year}-${selectedClass.section}`;
+    const classTimetableId = classTimetableIds[classKey];
+    
+    // Add classTimetableId to each slot
+    return timetableData.map(slot => ({
+      ...slot,
+      classTimetableId
+    }));
   };
 
   const renderTimetable = (timetable, isFacultyTimetable = false) => {
@@ -326,13 +342,16 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
         requesterClass: {
           day: requesterClass.day,
           period: requesterClass.period,
-          slot: requesterClass.slot
+          slot: requesterClass.slot,
+          classTimetableId: requesterClass.slot.classTimetableId
         },
         targetClass: {
           day: targetClass.day,
           period: targetClass.period,
-          slot: targetClass.slot
+          slot: targetClass.slot,
+          classTimetableId: targetClass.slot.classTimetableId
         },
+        selectedClass: { ...selectedClass },
         selectedPeriods
       });
     }
@@ -344,6 +363,10 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
       <div className="timetable-section">
         <div className="section-header">
           <h3>Your Timetable</h3>
+          <div className="variant-toggle">
+            <button className={`btn ${timetableVariant==='default' ? 'btn-primary' : 'btn-secondary'}`} onClick={()=>setTimetableVariant('default')}>Default</button>
+            <button className={`btn ${timetableVariant==='current' ? 'btn-primary' : 'btn-secondary'}`} onClick={()=>setTimetableVariant('current')}>Current</button>
+          </div>
         </div>
         <div className="table-wrapper">
           {renderTimetable(facultyTimetable, true)}
@@ -411,6 +434,10 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
           <div className="section-header">
             <h3>{selectedClass.branch} {selectedClass.year} - Section {selectedClass.section} Timetable</h3>
             <p className="instruction-text">Click on your class first, then click on another faculty's class to request a swap</p>
+            <div className="variant-toggle">
+              <button className={`btn ${timetableVariant==='default' ? 'btn-primary' : 'btn-secondary'}`} onClick={()=>setTimetableVariant('default')}>Default</button>
+              <button className={`btn ${timetableVariant==='current' ? 'btn-primary' : 'btn-secondary'}`} onClick={()=>setTimetableVariant('current')}>Current</button>
+            </div>
           </div>
           <div className="table-wrapper">
             {renderClassTimetable()}
