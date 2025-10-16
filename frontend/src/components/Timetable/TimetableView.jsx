@@ -6,7 +6,7 @@ const API_BASE_URL = "http://localhost:3000/api";
 
 const TimetableView = ({ faculty, onSwapRequest }) => {
   const [facultyTimetable, setFacultyTimetable] = useState(null);
-  const [timetableVariant, setTimetableVariant] = useState("current"); // 'current' | 'default'
+  const [timetableVariant, setTimetableVariant] = useState("updated"); // 'current' | 'default'
   const [availableClasses, setAvailableClasses] = useState({});
   const [selectedClass, setSelectedClass] = useState({
     year: "",
@@ -72,7 +72,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
         setFacultyTimetable({
           ...data,
           timeSlots: data.version.timeSlots || [],
-          versionLabel: data.versionLabel || "current",
+          versionLabel: data.versionLabel || "updated",
         });
       } else {
         // legacy single-document timetable
@@ -132,6 +132,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
         setClassTimetable(null);
         return;
       }
+      console.log("Fetched class timetable data:", data);
 
       // Choose version based on timetableVariant. In v2 model, 'updated' is the current working version.
       const chosenVersion =
@@ -446,10 +447,10 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
               Default
             </button>
             <button
-              className={`btn ${
-                timetableVariant === "current" ? "btn-primary" : "btn-secondary"
+              className={`btn mx-2 ${
+                timetableVariant === "updated" ? "btn-primary" : "btn-secondary"
               }`}
-              onClick={() => setTimetableVariant("current")}
+              onClick={() => setTimetableVariant("updated")}
             >
               Current
             </button>
@@ -555,12 +556,12 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
                 Default
               </button>
               <button
-                className={`btn ${
-                  timetableVariant === "current"
+                className={`btn mx-2 ${
+                  timetableVariant === "updated"
                     ? "btn-primary"
                     : "btn-secondary"
                 }`}
-                onClick={() => setTimetableVariant("current")}
+                onClick={() => setTimetableVariant("updated")}
               >
                 Current
               </button>

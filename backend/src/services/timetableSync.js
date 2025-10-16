@@ -165,7 +165,7 @@ export async function getClassTimetable(branch, year, section) {
   const def = (doc.versions || []).find((v) => v.label === "default") || {
     timeSlots: [],
   };
-  const upd = (doc.versions || []).find((v) => v.label === "current") || {
+  const upd = (doc.versions || []).find((v) => v.label === "updated") || {
     timeSlots: [],
   };
   return { default: def, updated: upd, meta: doc };

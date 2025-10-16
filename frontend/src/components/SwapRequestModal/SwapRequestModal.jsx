@@ -73,6 +73,9 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
         targetFacultyId: swapData.targetClass.slot?.facultyId,
       };
 
+      // Debug: log the outgoing payload so server-side debug can correlate
+      console.log("[SwapRequestModal] sending payload", compactPayload);
+
       await axios.post(`${API_BASE_URL}/class-swap/create`, compactPayload, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -89,7 +92,8 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
       setSwapDate("");
     } catch (error) {
       console.error("Error creating swap request:", error);
-      alert("Failed to send swap request. Please try again.");
+      const serverMessage = error?.response?.data?.message || error?.message;
+      alert(`Failed to send swap request: ${serverMessage}`);
     } finally {
       setSubmitting(false);
     }

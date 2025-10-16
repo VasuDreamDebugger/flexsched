@@ -59,11 +59,11 @@ export const debugResolveClassTimetables = async (req, res) => {
 // Create a new class swap request
 export const createSwapRequest = async (req, res) => {
   try {
-    console.log("[swap:create] incoming", {
-      keys: Object.keys(req.body || {}),
-      hasRequesterClass: !!req.body?.requesterClass,
-      hasTargetClass: !!req.body?.targetClass,
-    });
+    // Log full incoming payload for debugging (safe in dev only)
+    console.log(
+      "[swap:create] incoming payload:",
+      JSON.stringify(req.body || {})
+    );
 
     // Migration-safe payload parsing: support new and old formats
     let targetFacultyId;
@@ -82,17 +82,64 @@ export const createSwapRequest = async (req, res) => {
         requestedDay,
         requestedPeriod,
       } = req.body;
+
       if (!yourClassId || !requestedClassId) {
+        console.warn("[swap:create] missing class ids", {
+          yourClassId,
+          requestedClassId,
+        });
         return res.status(400).json({
           success: false,
           message: "yourClassId and requestedClassId are required",
+          details: { yourClassId, requestedClassId, payload: req.body },
         });
       }
-      if (!yourDay || !yourPeriod || !requestedDay || !requestedPeriod) {
+
+      // Normalize period inputs: accept number or array (periods)
+      const normalizePeriodInput = (p) => {
+        if (typeof p === "number") return p;
+        if (Array.isArray(p) && p.length > 0) return Number(p[0]);
+        return undefined;
+      };
+
+      const yourPeriodNorm = normalizePeriodInput(
+        yourPeriod ??
+          req.body?.yourPeriods ??
+          req.body?.requesterClass?.periods ??
+          req.body?.requesterClass?.period
+      );
+      const requestedPeriodNorm = normalizePeriodInput(
+        requestedPeriod ??
+          req.body?.requestedPeriods ??
+          req.body?.targetClass?.periods ??
+          req.body?.targetClass?.period
+      );
+
+      if (
+        !yourDay ||
+        typeof yourPeriodNorm === "undefined" ||
+        !requestedDay ||
+        typeof requestedPeriodNorm === "undefined"
+      ) {
+        console.warn("[swap:create] missing day/period fields", {
+          yourDay,
+          yourPeriod,
+          yourPeriodNorm,
+          requestedDay,
+          requestedPeriod,
+          requestedPeriodNorm,
+        });
         return res.status(400).json({
           success: false,
           message:
             "yourDay/yourPeriod/requestedDay/requestedPeriod are required in new format",
+          details: {
+            yourDay,
+            yourPeriod: yourPeriodNorm,
+            requestedDay,
+            requestedPeriod: requestedPeriodNorm,
+            payload: req.body,
+          },
         });
       }
 
@@ -144,7 +191,7 @@ export const createSwapRequest = async (req, res) => {
 
       console.log("[swap:create] yourClassDoc found:", !!yourClassDoc);
 
-      console.log(yourClassDoc);
+      //  console.log(yourClassDoc);
       console.log(
         "[swap:create] requestedClassDoc found:",
         !!requestedClassDoc
@@ -244,22 +291,84 @@ export const createSwapRequest = async (req, res) => {
         }
       }
       // build requesterClass from yourClassDoc (prefer updated version if present)
-      const yourVersion =
-        (yourClassDoc.versions || []).find((v) => v.label === "updated") ||
-        (yourClassDoc.versions || []).find((v) => v.label === "default");
-      const reqSlot = yourVersion?.timeSlots?.find(
-        (s) => s.day === yourDay && s.period === Number(yourPeriod)
+      let yourVersion = (yourClassDoc.versions || []).find(
+        (v) => v.label === "updated"
       );
-      if (!reqSlot) {
+
+      if (!yourVersion?.timeSlots?.length) {
+        yourVersion = (yourClassDoc.versions || []).find(
+          (v) => v.label === "default"
+        );
+      }
+
+      // console.log("your version", yourVersion);
+      console.log("Normalized search:", {
+        day: yourDay.toLowerCase().trim(),
+        period: Number(yourPeriod),
+      });
+
+      // console.log(
+      //   "Normalized slots:",
+      //   yourVersion.timeSlots.map((s) => ({
+      //     day: s.day.toLowerCase().trim(),
+      //     period: Number(s.period),
+      //   }))
+      // );
+
+      console.log("[swap:create] incoming payload:", req.body);
+      console.log("Raw inputs:", {
+        yourDay,
+        yourPeriod,
+        typeofDay: typeof yourDay,
+        typeofPeriod: typeof yourPeriod,
+      });
+
+      // console.log(
+      //   "Slot types:",
+      //   yourVersion.timeSlots.map((s) => ({
+      //     day: s.day,
+      //     period: s.period,
+      //     typeofPeriod: typeof s.period,
+      //   }))
+      // );
+      // const testMatch = yourVersion.timeSlots.find(
+      //   (s) => s.day === "Monday" && s.period === 2
+      // );
+      // console.log("Manual testMatch:", testMatch);
+      // console.log(
+      //   "About to run .find() on yourVersion.label:",
+      //   yourVersion?.label
+      // );
+      // console.log("TimeSlots length:", yourVersion?.timeSlots?.length);
+
+      const reqSlot = yourVersion?.timeSlots?.find(
+        (s) =>
+          s.day.toLowerCase().trim() === yourDay.toLowerCase().trim() &&
+          s.period === Number(yourPeriod)
+      );
+      // console.log("reqSlot result:", reqSlot);
+      // console.log("Final check before condition:", { reqSlot });
+      // console.log("Type of reqSlot:", typeof reqSlot);
+      // console.log("Is reqSlot truthy?", !!reqSlot);
+
+      if (reqSlot === null || typeof reqSlot === "undefined") {
         return res.status(400).json({
           success: false,
           message:
             "No matching slot found in your class timetable for provided day/period",
         });
       }
-      const requestedVersion =
-        (requestedClassDoc.versions || []).find((v) => v.label === "updated") ||
-        (requestedClassDoc.versions || []).find((v) => v.label === "default");
+
+      let requestedVersion = (requestedClassDoc.versions || []).find(
+        (v) => v.label === "updated"
+      );
+
+      if (!requestedVersion?.timeSlots?.length) {
+        requestedVersion = (requestedClassDoc.versions || []).find(
+          (v) => v.label === "default"
+        );
+      }
+
       const tgtSlot = requestedVersion?.timeSlots?.find(
         (s) => s.day === requestedDay && s.period === Number(requestedPeriod)
       );
@@ -267,7 +376,7 @@ export const createSwapRequest = async (req, res) => {
         return res.status(400).json({
           success: false,
           message:
-            "No matching slot found in requested class timetable for provided day/period",
+            "No v matching slot found in requested class timetable for provided day/period",
         });
       }
       // Compose legacy-shaped objects to reuse downstream validation and swap flow
@@ -350,8 +459,8 @@ export const createSwapRequest = async (req, res) => {
       });
     }
 
-    // Check if faculty is trying to swap with themselves
-    if (requesterId.toString() === targetFacultyId) {
+    // Check if faculty is trying to swap with themselves (compare as strings)
+    if (String(requesterId) === String(targetFacultyId)) {
       return res.status(400).json({
         success: false,
         message: "Cannot request swap with yourself",
@@ -426,9 +535,12 @@ export const createSwapRequest = async (req, res) => {
       data: { swapRequest },
     });
   } catch (error) {
-    console.error("Create swap request error:", error);
+    console.error(
+      "Create swap request error:",
+      error && error.stack ? error.stack : error
+    );
 
-    if (error.name === "ValidationError") {
+    if (error && error.name === "ValidationError") {
       const errors = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({
         success: false,
@@ -437,9 +549,21 @@ export const createSwapRequest = async (req, res) => {
       });
     }
 
+    // In development return error message to aid debugging
     res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message:
+        process.env.NODE_ENV === "production"
+          ? "Internal server error"
+          : error && error.message
+          ? error.message
+          : "Internal server error",
+      error:
+        process.env.NODE_ENV === "production"
+          ? {}
+          : error && error.stack
+          ? error.stack
+          : null,
     });
   }
 };
@@ -614,7 +738,7 @@ export const acceptSwapRequest = async (req, res) => {
 
     // Update ClassTimetable documents with new version after swap
     try {
-      console.log("swapRequest", swapRequest);
+      // console.log("swapRequest", swapRequest);
       const yourClassDoc = await ClassTimetable.findById(
         swapRequest.requesterClass.classTimetableId
       );
@@ -672,7 +796,10 @@ export const acceptSwapRequest = async (req, res) => {
         updatedBy,
         swapReference
       ) => {
-        let currentVersion = (classDoc.versions || []).find(
+        if (!classDoc) return false;
+
+        // Ensure we use local variables
+        const currentVersion = (classDoc.versions || []).find(
           (v) => v.label === "default"
         );
         if (!currentVersion) {
@@ -682,29 +809,15 @@ export const acceptSwapRequest = async (req, res) => {
           return false;
         }
 
-        if (!classDoc) return false;
+        // Normalize swapPeriod/otherPeriod (support both number and array stored as 'periods')
+        const normalizePeriod = (p) => {
+          if (Array.isArray(p)) return p[0];
+          return p;
+        };
+        const sPeriod = normalizePeriod(swapPeriod);
+        const oPeriod = normalizePeriod(otherPeriod);
 
-        // Always create or update the 'updated' version after swap
-        let updatedVersion = (classDoc.versions || []).find(
-          (v) => v.label === "updated"
-        );
-        if (!updatedVersion) {
-          updatedVersion = {
-            label: "updated",
-            timeSlots: [],
-            updatedAt: new Date(),
-            updatedBy,
-            swapReference,
-          };
-          classDoc.versions.push(updatedVersion);
-        }
-
-        // Start from the latest default version
-        currentVersion = (classDoc.versions || []).find(
-          (v) => v.label === "default"
-        );
-        if (!currentVersion) return false;
-
+        // Start from the latest default version's slots
         const updatedSlots = JSON.parse(
           JSON.stringify(currentVersion.timeSlots || [])
         );
@@ -713,18 +826,26 @@ export const acceptSwapRequest = async (req, res) => {
         );
 
         const swapIdx = updatedSlots.findIndex(
-          (s) => s.day === swapDay && Number(s.period) === Number(swapPeriod)
+          (s) => s.day === swapDay && Number(s.period) === Number(sPeriod)
         );
         const otherIdx = updatedSlots.findIndex(
-          (s) => s.day === otherDay && Number(s.period) === Number(otherPeriod)
+          (s) => s.day === otherDay && Number(s.period) === Number(oPeriod)
+        );
+
+        console.log(
+          `[swap:update] class ${classDoc._id} currentVersion=${
+            currentVersion.label
+          } slots=${
+            (currentVersion.timeSlots || []).length
+          } swapIdx=${swapIdx} otherIdx=${otherIdx}`
         );
 
         if (swapIdx === -1 || otherIdx === -1) {
           console.warn("[swap:update] Could not locate matching slots", {
             swapDay,
-            swapPeriod,
+            swapPeriod: sPeriod,
             otherDay,
-            otherPeriod,
+            otherPeriod: oPeriod,
           });
           return false;
         }
@@ -745,13 +866,12 @@ export const acceptSwapRequest = async (req, res) => {
           return false;
         }
 
-        // Swap the slots
-        const tempSlot = {};
-        requiredFields.forEach((f) => (tempSlot[f] = updatedSlots[swapIdx][f]));
-        requiredFields.forEach((f) => {
-          updatedSlots[swapIdx][f] = updatedSlots[otherIdx][f];
-          updatedSlots[otherIdx][f] = tempSlot[f];
-        });
+        // Swap the entire slot objects (deep-cloned) so we preserve all metadata
+        const tempSlot = JSON.parse(JSON.stringify(updatedSlots[swapIdx]));
+        updatedSlots[swapIdx] = JSON.parse(
+          JSON.stringify(updatedSlots[otherIdx])
+        );
+        updatedSlots[otherIdx] = tempSlot;
 
         updatedSlots.forEach((slot, i) =>
           sanitizeSlotFields(slot, currentVersion.timeSlots[i])
@@ -760,24 +880,74 @@ export const acceptSwapRequest = async (req, res) => {
         const hasMissingFields = updatedSlots.some((slot) =>
           requiredFields.some((f) => typeof slot[f] === "undefined")
         );
+        console.log("[swap:update] swapped slots preview", {
+          swapSlot: updatedSlots[swapIdx],
+          otherSlot: updatedSlots[otherIdx],
+        });
+        console.log("updated slots :", updatedSlots);
         if (hasMissingFields) {
           console.error("[swap:update] Aborting save due to missing fields");
           return false;
         }
 
-        // Overwrite or create the 'updated' version
-        updatedVersion.timeSlots = updatedSlots;
+        // At this point swap succeeded in-memory. Create or update the 'updated' version
+        let updatedVersion = (classDoc.versions || []).find(
+          (v) => v.label === "updated"
+        );
+        if (!updatedVersion) {
+          updatedVersion = {
+            label: "updated",
+            timeSlots: [],
+            updatedAt: new Date(),
+            updatedBy,
+            swapReference,
+          };
+          // Deep clone versions array and push new version
+          classDoc.versions = [...(classDoc.versions || []), updatedVersion];
+        }
+
+        // Now write the new slots into the updated version
+        // Deep clone slots and reassign to ensure Mongoose detects the change
+        updatedVersion.timeSlots = JSON.parse(JSON.stringify(updatedSlots));
         updatedVersion.updatedAt = new Date();
         updatedVersion.updatedBy = updatedBy;
         updatedVersion.swapReference = swapReference;
-        updatedVersion.note = `Swapped ${swapDay} P${swapPeriod} with ${otherDay} P${otherPeriod}`;
+        updatedVersion.note = `Swapped ${swapDay} P${sPeriod} with ${otherDay} P${oPeriod}`;
         classDoc.currentVersionLabel = "updated";
 
+        console.log(
+          `[swap:update] about to save updatedVersion for class ${classDoc._id} slots=${updatedSlots.length}`
+        );
         try {
+          // Force Mongoose to detect nested changes
+          classDoc.markModified("versions");
+
+          // Save and verify the update
           await classDoc.save();
-          console.log(
-            `[swap:update] Saved updated version for class ${classDoc._id}`
+
+          // Read back and verify slots were saved
+          const saved = await ClassTimetable.findById(classDoc._id);
+          const savedVersion = saved.versions.find(
+            (v) => v.label === "updated"
           );
+          if (
+            !savedVersion ||
+            !savedVersion.timeSlots ||
+            savedVersion.timeSlots.length !== updatedSlots.length
+          ) {
+            console.error(
+              "[swap:update] Verification failed - saved version missing or has wrong number of slots",
+              {
+                hasVersion: !!savedVersion,
+                savedSlots: savedVersion?.timeSlots?.length,
+                expectedSlots: updatedSlots.length,
+              }
+            );
+            return false;
+          }
+          console.log(`[swap:update] Verified save for class ${classDoc._id}`, {
+            slots: savedVersion.timeSlots.length,
+          });
           return true;
         } catch (saveErr) {
           console.error("[swap:update] Save failed:", saveErr);
@@ -790,9 +960,10 @@ export const acceptSwapRequest = async (req, res) => {
         const success = await updateClassVersion(
           yourClassDoc,
           swapRequest.requesterClass.day,
-          swapRequest.requesterClass.periods,
+          swapRequest.requesterClass.periods &&
+            swapRequest.requesterClass.periods[0],
           swapRequest.targetClass.day,
-          swapRequest.targetClass.periods,
+          swapRequest.targetClass.periods && swapRequest.targetClass.periods[0],
           swapRequest.requesterId,
           swapRequest._id
         );
@@ -808,18 +979,18 @@ export const acceptSwapRequest = async (req, res) => {
           updateClassVersion(
             yourClassDoc,
             swapRequest.requesterClass.day,
-            swapRequest.requesterClass.period,
+            swapRequest.requesterClass.periods,
             swapRequest.targetClass.day,
-            swapRequest.targetClass.period,
+            swapRequest.targetClass.periods,
             swapRequest.requesterId,
             swapRequest._id
           ),
           updateClassVersion(
             requestedClassDoc,
             swapRequest.targetClass.day,
-            swapRequest.targetClass.period,
+            swapRequest.targetClass.periods,
             swapRequest.requesterClass.day,
-            swapRequest.requesterClass.period,
+            swapRequest.requesterClass.periods,
             swapRequest.targetFacultyId,
             swapRequest._id
           ),
