@@ -1,23 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import './TimetableView.css';
+import React, { useState, useEffect, useCallback } from "react";
+import axios from "axios";
+import "./TimetableView.css";
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = "http://localhost:3000/api";
 
 const TimetableView = ({ faculty, onSwapRequest }) => {
   const [facultyTimetable, setFacultyTimetable] = useState(null);
-  const [timetableVariant, setTimetableVariant] = useState('current'); // 'current' | 'default'
+  const [timetableVariant, setTimetableVariant] = useState("current"); // 'current' | 'default'
   const [availableClasses, setAvailableClasses] = useState({});
   const [selectedClass, setSelectedClass] = useState({
-    year: '',
-    branch: '',
-    section: ''
+    year: "",
+    branch: "",
+    section: "",
   });
   const [classTimetable, setClassTimetable] = useState(null);
   const [selectedPeriods, setSelectedPeriods] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingFaculty, setLoadingFaculty] = useState(false);
+  const [loadingClass, setLoadingClass] = useState(false);
 
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const days = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
   const periods = [1, 2, 3, 4, 5, 6];
   const periodTimings = {
     1: { start: "09:00", end: "10:00" },
@@ -25,212 +33,220 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
     3: { start: "11:00", end: "12:00" },
     4: { start: "13:00", end: "14:00" },
     5: { start: "14:00", end: "15:00" },
-    6: { start: "15:00", end: "16:00" }
+    6: { start: "15:00", end: "16:00" },
   };
 
-  useEffect(() => {
-    fetchFacultyTimetable();
-    fetchAvailableClasses();
+  // Fetch faculty timetable (current/default)
+  const fetchFacultyTimetable = useCallback(async () => {
+    try {
+      setLoadingFaculty(true);
+      const token = localStorage.getItem("token");
+      // Use v2 faculty endpoint which returns a FacultyTimetable document
+      const response = await axios.get(`${API_BASE_URL}/timetable/faculty/v2`, {
+        headers: { Authorization: `Bearer ${token}` },
+        // v2 supports academicYear & semester if you want to scope; omitted for now
+      });
+
+      const data = response.data?.data || null;
+      // data may be a versioned FacultyTimetable (with versions/currentVersionLabel) or a legacy timetable
+      if (!data) {
+        setFacultyTimetable(null);
+        return;
+      }
+
+      // If the response includes versions, pick the appropriate version
+      if (data.versions && Array.isArray(data.versions)) {
+        const label =
+          timetableVariant === "default"
+            ? "default"
+            : data.currentVersionLabel || "updated" || "default";
+        const version = data.versions.find((v) => v.label === label) ||
+          data.versions[0] || { timeSlots: [] };
+        setFacultyTimetable({
+          ...data,
+          timeSlots: version.timeSlots || [],
+          versionLabel: label,
+        });
+      } else if (data.version && data.version.timeSlots) {
+        // alternate shape returned by controller (version + versionLabel)
+        setFacultyTimetable({
+          ...data,
+          timeSlots: data.version.timeSlots || [],
+          versionLabel: data.versionLabel || "current",
+        });
+      } else {
+        // legacy single-document timetable
+        setFacultyTimetable({ ...data, timeSlots: data.timeSlots || [] });
+      }
+    } catch (error) {
+      console.error("Error fetching faculty timetable:", error);
+      setFacultyTimetable(null);
+    } finally {
+      setLoadingFaculty(false);
+    }
   }, [timetableVariant]);
 
-  useEffect(() => {
-    if (selectedClass.year && selectedClass.branch && selectedClass.section) {
-      fetchClassTimetable();
-    }
-  }, [selectedClass]);
-
-  const fetchFacultyTimetable = async () => {
+  // Fetch available classes (for dropdowns)
+  const fetchAvailableClasses = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/timetable/faculty`, {
-        headers: { Authorization: `Bearer ${token}` }
-        , params: { variant: timetableVariant }
-      });
-      setFacultyTimetable(response.data.data.timetable);
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${API_BASE_URL}/timetable/classes/available`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setAvailableClasses(response.data.data.classes || {});
     } catch (error) {
-      console.error('Error fetching faculty timetable:', error);
+      console.error("Error fetching available classes:", error);
+      setAvailableClasses({});
     }
-  };
+  }, []);
 
-  const fetchAvailableClasses = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/timetable/classes/available`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setAvailableClasses(response.data.data.classes);
-    } catch (error) {
-      console.error('Error fetching available classes:', error);
+  // Fetch selected class timetable (current/default)
+  const fetchClassTimetable = useCallback(async () => {
+    if (
+      !selectedClass.year ||
+      !selectedClass.branch ||
+      !selectedClass.section
+    ) {
+      setClassTimetable(null);
+      return;
     }
-  };
 
-  const fetchClassTimetable = async () => {
     try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/timetable/classes`, {
+      setLoadingClass(true);
+      const token = localStorage.getItem("token");
+      // Use v2 class timetable which returns { default, updated, meta }
+      const response = await axios.get(`${API_BASE_URL}/timetable/classes/v2`, {
         headers: { Authorization: `Bearer ${token}` },
         params: {
           year: selectedClass.year,
           branch: selectedClass.branch,
           section: selectedClass.section,
-          variant: timetableVariant
-        }
+        },
       });
-      
-      const sections = response.data.data.sections;
-      const targetSection = sections.find(s => s.section === selectedClass.section);
-      setClassTimetable(targetSection);
+
+      const data = response.data?.data;
+      if (!data) {
+        setClassTimetable(null);
+        return;
+      }
+
+      // Choose version based on timetableVariant. In v2 model, 'updated' is the current working version.
+      const chosenVersion =
+        timetableVariant === "default" ? data.default : data.updated;
+
+      // Normalize slots: ensure timeSlots array exists and attach classTimetableId so UI + swap logic can use it
+      const normalized = {
+        ...chosenVersion,
+        timeSlots: (chosenVersion.timeSlots || []).map((s) => ({
+          ...s,
+          // attach class timetable id from meta for downstream requests
+          // ensure we always attach a string id (avoid passing a raw object)
+          classTimetableId:
+            (data.meta && data.meta._id && String(data.meta._id)) ||
+            (data.meta && data.meta.id && String(data.meta.id)) ||
+            null,
+        })),
+        meta: data.meta,
+      };
+
+      setClassTimetable(normalized);
     } catch (error) {
-      console.error('Error fetching class timetable:', error);
+      console.error("Error fetching class timetable:", error);
+      setClassTimetable(null);
     } finally {
-      setLoading(false);
+      setLoadingClass(false);
     }
+  }, [selectedClass, timetableVariant]);
+
+  // Initial and variant-aware fetches
+  useEffect(() => {
+    fetchFacultyTimetable();
+    fetchAvailableClasses();
+  }, [fetchFacultyTimetable, fetchAvailableClasses]);
+
+  // When selected class changes OR timetableVariant changes, reload class timetable
+  useEffect(() => {
+    fetchClassTimetable();
+  }, [fetchClassTimetable]);
+
+  // Helper: check if a given slot object belongs to the current faculty
+  // Supports both legacy slot.faculty (string) and v2 slot.facultyId populated object
+  const isFacultySlot = (slot) => {
+    if (!slot) return false;
+    if (slot.faculty && typeof slot.faculty === "string")
+      return slot.faculty === faculty?.name;
+    if (slot.facultyId && typeof slot.facultyId === "object")
+      return slot.facultyId?.name === faculty?.name;
+    return false;
   };
 
-  // NEW LOGIC: Handle period selection for class timetable only
+  // Prevent duplicate selection (same cell twice)
+  const alreadySelectedCell = (day, period) =>
+    selectedPeriods.some((p) => p.day === day && p.period === period);
+
   const handlePeriodClick = (day, period, slot) => {
     if (!slot) return; // Don't allow clicking on empty slots
-    
-    const periodKey = `${day}-${period}`;
-    
+
+    // Prevent clicking same cell twice
+    if (alreadySelectedCell(day, period)) return;
+
     if (selectedPeriods.length === 0) {
       // First selection - must be faculty's own class
-      if (slot.faculty === faculty?.name) {
+      if (isFacultySlot(slot)) {
         setSelectedPeriods([{ day, period, slot, isFacultyClass: true }]);
       } else {
-        alert('Please select your own class first');
+        alert("Please select your own class first");
       }
     } else if (selectedPeriods.length === 1) {
-      // Second selection - must be different faculty's class
-      if (slot.faculty !== faculty?.name && selectedPeriods[0].day !== day) {
-        setSelectedPeriods([...selectedPeriods, { day, period, slot, isFacultyClass: false }]);
-      } else if (slot.faculty === faculty?.name) {
-        alert('Please select a different faculty\'s class to swap with');
-      } else if (selectedPeriods[0].day === day) {
-        alert('Please select a different day');
+      // Second selection - must be different faculty's class and different day
+      const first = selectedPeriods[0];
+      if (!isFacultySlot(slot) && first.day !== day) {
+        setSelectedPeriods([
+          ...selectedPeriods,
+          { day, period, slot, isFacultyClass: false },
+        ]);
+      } else if (isFacultySlot(slot)) {
+        alert("Please select a different faculty's class to swap with");
+      } else if (first.day === day) {
+        alert("Please select a different day");
       }
     } else {
-      // Reset selection
-      setSelectedPeriods([{ day, period, slot, isFacultyClass: slot.faculty === faculty?.name }]);
+      // Reset selection (start new selection with this cell)
+      setSelectedPeriods([
+        { day, period, slot, isFacultyClass: isFacultySlot(slot) },
+      ]);
     }
   };
 
-  const getCellClass = (day, period, slot) => {
-    let classes = 'timetable-cell';
-    
+  const getCellClass = (day, period, slot, isFacultyTimetable = false) => {
+    let classes = "timetable-cell";
+
     if (slot) {
-      if (slot.faculty === faculty?.name) {
-        classes += ' faculty-class';
+      // If rendering faculty's own timetable, all non-empty slots are faculty's
+      if (isFacultyTimetable || isFacultySlot(slot)) {
+        classes += " faculty-class";
       } else {
-        classes += ' other-faculty-class';
+        classes += " other-faculty-class";
       }
-      
-      const isSelected = selectedPeriods.some(p => p.day === day && p.period === period);
+
+      const isSelected = selectedPeriods.some(
+        (p) => p.day === day && p.period === period
+      );
       if (isSelected) {
-        classes += ' selected';
+        classes += " selected";
+        // optional: add distinct marker for source vs target
+        const selIndex = selectedPeriods.findIndex(
+          (p) => p.day === day && p.period === period
+        );
+        if (selIndex === 0) classes += " selected-source";
+        if (selIndex === 1) classes += " selected-target";
       }
     }
-    
+
     return classes;
-  };
-
-  const getSampleClassTimetable = () => {
-    // Real faculty IDs from database
-    const facultyIds = {
-      "Dr. P. Sindhu": "68ed439f294d32bcd4ce617b",
-      "Dr. R. Kumar": "68ed43a0294d32bcd4ce617d", 
-      "Dr. S. Reddy": "68ed43a1294d32bcd4ce617f",
-      "Dr. A. Sharma": "68ed43a1294d32bcd4ce6181",
-      "Dr. M. Patel": "68ed43a2294d32bcd4ce6183"
-    };
-
-    // Real ClassTimetable IDs from seeded database
-    const classTimetableIds = {
-      "CSE-3rd Year-A": "68ed43a2294d32bcd4ce61c5",
-      "CSE-3rd Year-B": "68ed43a2294d32bcd4ce61c6",
-      "ECE-3rd Year-C": "68ed43a2294d32bcd4ce61c7"
-    };
-
-    const sampleData = {
-      "CSE": {
-        "3rd Year": {
-          "A": [
-            { day: "Monday", periods: [1, 2], subject: "Software Engineering", faculty: "Dr. P. Sindhu", facultyId: facultyIds["Dr. P. Sindhu"], room: "CS-101", isLab: false },
-            { day: "Monday", periods: [4], subject: "Database Management", faculty: "Dr. R. Kumar", facultyId: facultyIds["Dr. R. Kumar"], room: "CS-102", isLab: false },
-            { day: "Tuesday", periods: [3, 4], subject: "Web Technologies", faculty: "Dr. S. Reddy", facultyId: facultyIds["Dr. S. Reddy"], room: "CS-103", isLab: false },
-            { day: "Wednesday", periods: [1, 2], subject: "Data Structures", faculty: "Dr. A. Sharma", facultyId: facultyIds["Dr. A. Sharma"], room: "CS-104", isLab: false },
-            { day: "Wednesday", periods: [5, 6], subject: "Software Engineering Lab", faculty: "Dr. P. Sindhu", facultyId: facultyIds["Dr. P. Sindhu"], room: "CS-Lab-1", isLab: true },
-            { day: "Thursday", periods: [2, 3], subject: "Database Lab", faculty: "Dr. R. Kumar", facultyId: facultyIds["Dr. R. Kumar"], room: "CS-Lab-2", isLab: true },
-            { day: "Friday", periods: [1], subject: "Software Engineering", faculty: "Dr. P. Sindhu", facultyId: facultyIds["Dr. P. Sindhu"], room: "CS-101", isLab: false },
-            { day: "Saturday", periods: [3, 4], subject: "Web Technologies Lab", faculty: "Dr. S. Reddy", facultyId: facultyIds["Dr. S. Reddy"], room: "CS-Lab-1", isLab: true }
-          ],
-          "B": [
-            { day: "Monday", periods: [2, 3], subject: "Computer Networks", faculty: "Dr. M. Patel", facultyId: facultyIds["Dr. M. Patel"], room: "CS-105", isLab: false },
-            { day: "Tuesday", periods: [1, 2], subject: "Software Engineering", faculty: "Dr. P. Sindhu", facultyId: facultyIds["Dr. P. Sindhu"], room: "CS-101", isLab: false },
-            { day: "Wednesday", periods: [4, 5], subject: "Database Management", faculty: "Dr. R. Kumar", facultyId: facultyIds["Dr. R. Kumar"], room: "CS-102", isLab: false },
-            { day: "Thursday", periods: [1, 2], subject: "Web Technologies", faculty: "Dr. S. Reddy", facultyId: facultyIds["Dr. S. Reddy"], room: "CS-103", isLab: false },
-            { day: "Thursday", periods: [5, 6], subject: "Computer Networks Lab", faculty: "Dr. M. Patel", facultyId: facultyIds["Dr. M. Patel"], room: "CS-Lab-2", isLab: true },
-            { day: "Friday", periods: [3, 4], subject: "Data Structures", faculty: "Dr. A. Sharma", facultyId: facultyIds["Dr. A. Sharma"], room: "CS-104", isLab: false },
-            { day: "Saturday", periods: [1, 2], subject: "Software Engineering Lab", faculty: "Dr. P. Sindhu", facultyId: facultyIds["Dr. P. Sindhu"], room: "CS-Lab-1", isLab: true }
-          ]
-        },
-        "2nd Year": {
-          "A": [
-            { day: "Monday", periods: [1, 2], subject: "Object Oriented Programming", faculty: "Dr. S. Reddy", facultyId: facultyIds["Dr. S. Reddy"], room: "CS-201", isLab: false },
-            { day: "Tuesday", periods: [3, 4], subject: "Data Structures", faculty: "Dr. A. Sharma", facultyId: facultyIds["Dr. A. Sharma"], room: "CS-202", isLab: false },
-            { day: "Wednesday", periods: [2, 3], subject: "Computer Networks", faculty: "Dr. M. Patel", facultyId: facultyIds["Dr. M. Patel"], room: "CS-203", isLab: false },
-            { day: "Thursday", periods: [1, 2], subject: "Database Systems", faculty: "Dr. R. Kumar", facultyId: facultyIds["Dr. R. Kumar"], room: "CS-204", isLab: false },
-            { day: "Friday", periods: [5, 6], subject: "OOP Lab", faculty: "Dr. S. Reddy", facultyId: facultyIds["Dr. S. Reddy"], room: "CS-Lab-1", isLab: true },
-            { day: "Saturday", periods: [3, 4], subject: "Data Structures Lab", faculty: "Dr. A. Sharma", facultyId: facultyIds["Dr. A. Sharma"], room: "CS-Lab-2", isLab: true }
-          ]
-        }
-      },
-      "IT": {
-        "3rd Year": {
-          "A": [
-            { day: "Monday", periods: [2, 3], subject: "Information Security", faculty: "Dr. A. Sharma", facultyId: facultyIds["Dr. A. Sharma"], room: "IT-101", isLab: false },
-            { day: "Tuesday", periods: [1, 2], subject: "Software Testing", faculty: "Dr. P. Sindhu", facultyId: facultyIds["Dr. P. Sindhu"], room: "IT-102", isLab: false },
-            { day: "Wednesday", periods: [4, 5], subject: "Mobile Computing", faculty: "Dr. R. Kumar", facultyId: facultyIds["Dr. R. Kumar"], room: "IT-103", isLab: false },
-            { day: "Thursday", periods: [3, 4], subject: "Information Security Lab", faculty: "Dr. A. Sharma", facultyId: facultyIds["Dr. A. Sharma"], room: "IT-Lab-1", isLab: true },
-            { day: "Friday", periods: [1, 2], subject: "Software Testing Lab", faculty: "Dr. P. Sindhu", facultyId: facultyIds["Dr. P. Sindhu"], room: "IT-Lab-2", isLab: true },
-            { day: "Saturday", periods: [2, 3], subject: "Mobile Computing Lab", faculty: "Dr. R. Kumar", facultyId: facultyIds["Dr. R. Kumar"], room: "IT-Lab-1", isLab: true }
-          ]
-        }
-      },
-      "ECE": {
-        "3rd Year": {
-          "C": [
-            { day: "Monday", periods: [1, 2], subject: "Digital Electronics", faculty: "Dr. A. Sharma", facultyId: facultyIds["Dr. A. Sharma"], room: "ECE-101", isLab: false },
-            { day: "Monday", periods: [4], subject: "Signals & Systems", faculty: "Dr. R. Kumar", facultyId: facultyIds["Dr. R. Kumar"], room: "ECE-102", isLab: false },
-            { day: "Monday", periods: [5, 6], subject: "Digital Electronics Lab", faculty: "Dr. A. Sharma", facultyId: facultyIds["Dr. A. Sharma"], room: "ECE-Lab-1", isLab: true },
-            { day: "Tuesday", periods: [1], subject: "Communication Systems", faculty: "Dr. S. Reddy", facultyId: facultyIds["Dr. S. Reddy"], room: "ECE-103", isLab: false },
-            { day: "Tuesday", periods: [2, 3], subject: "VLSI Design", faculty: "Dr. M. Patel", facultyId: facultyIds["Dr. M. Patel"], room: "ECE-104", isLab: false },
-            { day: "Wednesday", periods: [1, 2], subject: "Digital Electronics", faculty: "Dr. A. Sharma", facultyId: facultyIds["Dr. A. Sharma"], room: "ECE-101", isLab: false },
-            { day: "Wednesday", periods: [3], subject: "Communication Systems", faculty: "Dr. S. Reddy", facultyId: facultyIds["Dr. S. Reddy"], room: "ECE-103", isLab: false },
-            { day: "Wednesday", periods: [5, 6], subject: "VLSI Design Lab", faculty: "Dr. M. Patel", facultyId: facultyIds["Dr. M. Patel"], room: "ECE-Lab-1", isLab: true },
-            { day: "Thursday", periods: [1, 2, 3], subject: "Communication Systems Lab", faculty: "Dr. S. Reddy", facultyId: facultyIds["Dr. S. Reddy"], room: "ECE-Lab-2", isLab: true },
-            { day: "Thursday", periods: [4], subject: "Signals & Systems", faculty: "Dr. R. Kumar", facultyId: facultyIds["Dr. R. Kumar"], room: "ECE-102", isLab: false },
-            { day: "Friday", periods: [1], subject: "VLSI Design", faculty: "Dr. M. Patel", facultyId: facultyIds["Dr. M. Patel"], room: "ECE-104", isLab: false },
-            { day: "Friday", periods: [2, 3], subject: "Digital Electronics", faculty: "Dr. A. Sharma", facultyId: facultyIds["Dr. A. Sharma"], room: "ECE-101", isLab: false },
-            { day: "Friday", periods: [4, 5, 6], subject: "Microprocessor Lab", faculty: "Dr. P. Sindhu", facultyId: facultyIds["Dr. P. Sindhu"], room: "ECE-Lab-1", isLab: true },
-            { day: "Saturday", periods: [1, 2], subject: "Communication Systems", faculty: "Dr. S. Reddy", facultyId: facultyIds["Dr. S. Reddy"], room: "ECE-103", isLab: false },
-            { day: "Saturday", periods: [3], subject: "Signals & Systems", faculty: "Dr. R. Kumar", facultyId: facultyIds["Dr. R. Kumar"], room: "ECE-102", isLab: false },
-            { day: "Saturday", periods: [4, 5, 6], subject: "Embedded Systems Lab", faculty: "Dr. P. Sindhu", facultyId: facultyIds["Dr. P. Sindhu"], room: "ECE-Lab-2", isLab: true }
-          ]
-        }
-      }
-    };
-
-    const timetableData = sampleData[selectedClass.branch]?.[selectedClass.year]?.[selectedClass.section] || [];
-    const classKey = `${selectedClass.branch}-${selectedClass.year}-${selectedClass.section}`;
-    const classTimetableId = classTimetableIds[classKey];
-    
-    // Add classTimetableId to each slot
-    return timetableData.map(slot => ({
-      ...slot,
-      classTimetableId
-    }));
   };
 
   const renderTimetable = (timetable, isFacultyTimetable = false) => {
@@ -241,32 +257,53 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
         <thead>
           <tr>
             <th>Day</th>
-            {periods.map(period => (
+            {periods.map((period) => (
               <th key={period}>
-                P{period}<br/>
-                <small>{periodTimings[period].start} - {periodTimings[period].end}</small>
+                P{period}
+                <br />
+                <small>
+                  {periodTimings[period].start} - {periodTimings[period].end}
+                </small>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {days.map(day => (
+          {days.map((day) => (
             <tr key={day}>
               <td className="day-header">{day}</td>
-              {periods.map(period => {
-                const slot = timetable.timeSlots?.find(ts => 
-                  ts.day === day && ts.periods.includes(period)
+              {periods.map((period) => {
+                const slot = timetable.timeSlots?.find(
+                  (ts) =>
+                    ts.day === day &&
+                    (ts.periods?.includes
+                      ? ts.periods?.includes(period)
+                      : ts.period === period || ts.periods === period)
                 );
-                
+
                 return (
                   <td
                     key={`${day}-${period}`}
-                    className={getCellClass(day, period, slot)}
+                    className={getCellClass(
+                      day,
+                      period,
+                      slot,
+                      isFacultyTimetable
+                    )}
                     onClick={() => handlePeriodClick(day, period, slot)}
-                    style={{ cursor: slot ? 'pointer' : 'default' }}
+                    style={{ cursor: slot ? "pointer" : "default" }}
+                    title={
+                      slot
+                        ? `Faculty: ${
+                            slot.faculty || slot.facultyId?.name || "-"
+                          }\nRoom: ${slot.room || "-"}\nTime: ${
+                            periodTimings[period].start
+                          } - ${periodTimings[period].end}`
+                        : undefined
+                    }
                   >
                     {slot ? (
-                      <div className={`class-slot ${slot.isLab ? 'lab' : ''}`}>
+                      <div className={`class-slot ${slot.isLab ? "lab" : ""}`}>
                         <div className="subject">{slot.subject}</div>
                         {slot.isLab && <div className="lab-badge">Lab</div>}
                       </div>
@@ -284,39 +321,55 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
   };
 
   const renderClassTimetable = () => {
-    const sampleTimetable = getSampleClassTimetable();
+    if (!classTimetable) return null;
 
     return (
       <table className="timetable-table">
         <thead>
           <tr>
             <th>Day</th>
-            {periods.map(period => (
+            {periods.map((period) => (
               <th key={period}>
-                P{period}<br/>
-                <small>{periodTimings[period].start} - {periodTimings[period].end}</small>
+                P{period}
+                <br />
+                <small>
+                  {periodTimings[period].start} - {periodTimings[period].end}
+                </small>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {days.map(day => (
+          {days.map((day) => (
             <tr key={day}>
               <td className="day-header">{day}</td>
-              {periods.map(period => {
-                const slot = sampleTimetable.find(s => 
-                  s.day === day && s.periods.includes(period)
+              {periods.map((period) => {
+                const slot = classTimetable.timeSlots?.find(
+                  (s) =>
+                    s.day === day &&
+                    (s.periods?.includes
+                      ? s.periods?.includes(period)
+                      : s.period === period || s.periods === period)
                 );
-                
+
                 return (
                   <td
                     key={`${day}-${period}`}
                     className={getCellClass(day, period, slot)}
                     onClick={() => handlePeriodClick(day, period, slot)}
-                    style={{ cursor: slot ? 'pointer' : 'default' }}
+                    style={{ cursor: slot ? "pointer" : "default" }}
+                    title={
+                      slot
+                        ? `Faculty: ${
+                            slot.faculty || slot.facultyId?.name || "-"
+                          }\nRoom: ${slot.room || "-"}\nTime: ${
+                            periodTimings[period].start
+                          } - ${periodTimings[period].end}`
+                        : undefined
+                    }
                   >
                     {slot ? (
-                      <div className={`class-slot ${slot.isLab ? 'lab' : ''}`} title={`Faculty: ${slot.faculty}\nRoom: ${slot.room}\nTime: ${periodTimings[period].start} - ${periodTimings[period].end}`}>
+                      <div className={`class-slot ${slot.isLab ? "lab" : ""}`}>
                         <div className="subject">{slot.subject}</div>
                         {slot.isLab && <div className="lab-badge">Lab</div>}
                       </div>
@@ -335,25 +388,45 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
 
   const handleSwapRequest = () => {
     if (selectedPeriods.length === 2) {
-      const requesterClass = selectedPeriods.find(p => p.isFacultyClass);
-      const targetClass = selectedPeriods.find(p => !p.isFacultyClass);
-      
-      onSwapRequest({
+      // Identify which is the faculty's own class and which is the target
+      const requesterClass = selectedPeriods.find((p) => p.isFacultyClass);
+      const targetClass = selectedPeriods.find((p) => !p.isFacultyClass);
+
+      // Defensive checks for required identifiers
+      if (
+        !requesterClass?.slot ||
+        !targetClass?.slot ||
+        !requesterClass.slot.classTimetableId ||
+        !targetClass.slot.classTimetableId ||
+        !targetClass.slot.facultyId
+      ) {
+        alert("Swap request failed: missing timetable identifiers.");
+        return;
+      }
+
+      // Construct robust swapData object for modal
+      const swapData = {
         requesterClass: {
           day: requesterClass.day,
           period: requesterClass.period,
+          classTimetableId: requesterClass.slot.classTimetableId,
           slot: requesterClass.slot,
-          classTimetableId: requesterClass.slot.classTimetableId
         },
         targetClass: {
           day: targetClass.day,
           period: targetClass.period,
+          classTimetableId: targetClass.slot.classTimetableId,
           slot: targetClass.slot,
-          classTimetableId: targetClass.slot.classTimetableId
         },
-        selectedClass: { ...selectedClass },
-        selectedPeriods
-      });
+        selectedClass: {
+          branch: selectedClass.branch,
+          year: selectedClass.year,
+          section: selectedClass.section,
+        },
+        selectedPeriods,
+      };
+
+      onSwapRequest(swapData);
     }
   };
 
@@ -364,12 +437,27 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
         <div className="section-header">
           <h3>Your Timetable</h3>
           <div className="variant-toggle">
-            <button className={`btn ${timetableVariant==='default' ? 'btn-primary' : 'btn-secondary'}`} onClick={()=>setTimetableVariant('default')}>Default</button>
-            <button className={`btn ${timetableVariant==='current' ? 'btn-primary' : 'btn-secondary'}`} onClick={()=>setTimetableVariant('current')}>Current</button>
+            <button
+              className={`btn ${
+                timetableVariant === "default" ? "btn-primary" : "btn-secondary"
+              }`}
+              onClick={() => setTimetableVariant("default")}
+            >
+              Default
+            </button>
+            <button
+              className={`btn ${
+                timetableVariant === "current" ? "btn-primary" : "btn-secondary"
+              }`}
+              onClick={() => setTimetableVariant("current")}
+            >
+              Current
+            </button>
           </div>
         </div>
         <div className="table-wrapper">
-          {renderTimetable(facultyTimetable, true)}
+          {loadingFaculty && <div className="loader">Loading...</div>}
+          {!loadingFaculty && renderTimetable(facultyTimetable, true)}
         </div>
       </div>
 
@@ -381,7 +469,14 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
             <label>Year</label>
             <select
               value={selectedClass.year}
-              onChange={(e) => setSelectedClass({...selectedClass, year: e.target.value, branch: '', section: ''})}
+              onChange={(e) =>
+                setSelectedClass({
+                  ...selectedClass,
+                  year: e.target.value,
+                  branch: "",
+                  section: "",
+                })
+              }
               className="form-select"
             >
               <option value="">Select Year</option>
@@ -396,7 +491,13 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
             <label>Branch</label>
             <select
               value={selectedClass.branch}
-              onChange={(e) => setSelectedClass({...selectedClass, branch: e.target.value, section: ''})}
+              onChange={(e) =>
+                setSelectedClass({
+                  ...selectedClass,
+                  branch: e.target.value,
+                  section: "",
+                })
+              }
               className="form-select"
               disabled={!selectedClass.year}
             >
@@ -414,7 +515,9 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
             <label>Section</label>
             <select
               value={selectedClass.section}
-              onChange={(e) => setSelectedClass({...selectedClass, section: e.target.value})}
+              onChange={(e) =>
+                setSelectedClass({ ...selectedClass, section: e.target.value })
+              }
               className="form-select"
               disabled={!selectedClass.branch}
             >
@@ -432,15 +535,40 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
       {selectedClass.year && selectedClass.branch && selectedClass.section && (
         <div className="timetable-section">
           <div className="section-header">
-            <h3>{selectedClass.branch} {selectedClass.year} - Section {selectedClass.section} Timetable</h3>
-            <p className="instruction-text">Click on your class first, then click on another faculty's class to request a swap</p>
+            <h3>
+              {selectedClass.branch} {selectedClass.year} - Section{" "}
+              {selectedClass.section} Timetable
+            </h3>
+            <p className="instruction-text">
+              Click on your class first, then click on another faculty's class
+              to request a swap
+            </p>
             <div className="variant-toggle">
-              <button className={`btn ${timetableVariant==='default' ? 'btn-primary' : 'btn-secondary'}`} onClick={()=>setTimetableVariant('default')}>Default</button>
-              <button className={`btn ${timetableVariant==='current' ? 'btn-primary' : 'btn-secondary'}`} onClick={()=>setTimetableVariant('current')}>Current</button>
+              <button
+                className={`btn ${
+                  timetableVariant === "default"
+                    ? "btn-primary"
+                    : "btn-secondary"
+                }`}
+                onClick={() => setTimetableVariant("default")}
+              >
+                Default
+              </button>
+              <button
+                className={`btn ${
+                  timetableVariant === "current"
+                    ? "btn-primary"
+                    : "btn-secondary"
+                }`}
+                onClick={() => setTimetableVariant("current")}
+              >
+                Current
+              </button>
             </div>
           </div>
           <div className="table-wrapper">
-            {renderClassTimetable()}
+            {loadingClass && <div className="loader">Loading...</div>}
+            {!loadingClass && renderClassTimetable()}
           </div>
         </div>
       )}
@@ -454,34 +582,53 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
               <div className="class-card requester">
                 <h4>Your Class</h4>
                 <div className="class-details">
-                  <p><strong>Day:</strong> {selectedPeriods[0].day}</p>
-                  <p><strong>Period:</strong> {selectedPeriods[0].period}</p>
-                  <p><strong>Subject:</strong> {selectedPeriods[0].slot.subject}</p>
-                  <p><strong>Time:</strong> {periodTimings[selectedPeriods[0].period].start} - {periodTimings[selectedPeriods[0].period].end}</p>
+                  <p>
+                    <strong>Day:</strong> {selectedPeriods[0].day}
+                  </p>
+                  <p>
+                    <strong>Period:</strong> {selectedPeriods[0].period}
+                  </p>
+                  <p>
+                    <strong>Subject:</strong> {selectedPeriods[0].slot.subject}
+                  </p>
+                  <p>
+                    <strong>Time:</strong>{" "}
+                    {periodTimings[selectedPeriods[0].period].start} -{" "}
+                    {periodTimings[selectedPeriods[0].period].end}
+                  </p>
                 </div>
               </div>
-              
+
               <div className="swap-arrow">⇄</div>
-              
+
               <div className="class-card target">
                 <h4>Requested Class</h4>
                 <div className="class-details">
-                  <p><strong>Day:</strong> {selectedPeriods[1].day}</p>
-                  <p><strong>Period:</strong> {selectedPeriods[1].period}</p>
-                  <p><strong>Subject:</strong> {selectedPeriods[1].slot.subject}</p>
-                  <p><strong>Faculty:</strong> {selectedPeriods[1].slot.faculty}</p>
-                  <p><strong>Time:</strong> {periodTimings[selectedPeriods[1].period].start} - {periodTimings[selectedPeriods[1].period].end}</p>
+                  <p>
+                    <strong>Day:</strong> {selectedPeriods[1].day}
+                  </p>
+                  <p>
+                    <strong>Period:</strong> {selectedPeriods[1].period}
+                  </p>
+                  <p>
+                    <strong>Subject:</strong> {selectedPeriods[1].slot.subject}
+                  </p>
+                  <p>
+                    <strong>Faculty:</strong> {selectedPeriods[1].slot.faculty}
+                  </p>
+                  <p>
+                    <strong>Time:</strong>{" "}
+                    {periodTimings[selectedPeriods[1].period].start} -{" "}
+                    {periodTimings[selectedPeriods[1].period].end}
+                  </p>
                 </div>
               </div>
             </div>
             <div className="swap-actions">
-              <button 
-                className="btn btn-primary"
-                onClick={handleSwapRequest}
-              >
+              <button className="btn btn-primary" onClick={handleSwapRequest}>
                 Request Class Swap
               </button>
-              <button 
+              <button
                 className="btn btn-secondary"
                 onClick={() => setSelectedPeriods([])}
               >

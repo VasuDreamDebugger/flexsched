@@ -5,8 +5,9 @@ import connectMongoDB from "./database/db.js";
 import routes from "./routes/index.js";
 import testRoutes from "./routes/testRoutes.js";
 import "./Models/index.js";
-import Student from './Models/Student.js';
-import cron from 'node-cron';
+import Student from "./Models/Student.js";
+import ClassTimetable from "./Models/ClassTimetable.js";
+import cron from "node-cron";
 
 // Load environment variables
 dotenv.config();
@@ -52,13 +53,13 @@ connectMongoDB();
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
   // Promote students yearly on June 1st at 02:00
-  cron.schedule('0 2 1 6 *', async () => {
+  cron.schedule("0 2 1 6 *", async () => {
     try {
-      console.log('Running yearly student promotion job...');
+      console.log("Running yearly student promotion job...");
       await Student.promoteYearly();
-      console.log('Student promotion completed.');
+      console.log("Student promotion completed.");
     } catch (e) {
-      console.error('Student promotion job failed:', e);
+      console.error("Student promotion job failed:", e);
     }
   });
 });

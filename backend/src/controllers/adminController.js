@@ -1,27 +1,28 @@
-import bcrypt from 'bcryptjs';
-import Admin from '../Models/Admin.js';
-import Faculty from '../Models/Faculty.js';
-import Timetable from '../Models/Timetable.js';
-import { generateToken } from '../middleware/auth.js';
+import bcrypt from "bcryptjs";
+import Admin from "../Models/Admin.js";
+import Faculty from "../Models/Faculty.js";
+import Timetable from "../Models/Timetable.js";
+import FacultyTimetable from "../Models/FacultyTimetable.js";
+import { generateToken } from "../middleware/auth.js";
 
 // Admin login
 export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const admin = await Admin.findOne({ email }).select('+password');
+    const admin = await Admin.findOne({ email }).select("+password");
 
     if (!admin) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: "Invalid email or password",
       });
     }
 
     if (!admin.isActive) {
       return res.status(401).json({
         success: false,
-        message: 'Admin account is deactivated'
+        message: "Admin account is deactivated",
       });
     }
 
@@ -30,7 +31,7 @@ export const adminLogin = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: "Invalid email or password",
       });
     }
 
@@ -41,17 +42,17 @@ export const adminLogin = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Admin login successful',
+      message: "Admin login successful",
       data: {
         admin: adminData,
-        token
-      }
+        token,
+      },
     });
   } catch (error) {
-    console.error('Admin login error:', error);
+    console.error("Admin login error:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };
@@ -68,18 +69,18 @@ export const createFaculty = async (req, res) => {
       employeeId,
       phoneNumber,
       designation,
-      department
+      department,
     } = req.body;
 
     // Check if faculty already exists
-    const existingFaculty = await Faculty.findOne({ 
-      $or: [{ email }, { employeeId }] 
+    const existingFaculty = await Faculty.findOne({
+      $or: [{ email }, { employeeId }],
     });
 
     if (existingFaculty) {
       return res.status(400).json({
         success: false,
-        message: 'Faculty with this email or employee ID already exists'
+        message: "Faculty with this email or employee ID already exists",
       });
     }
 
@@ -96,7 +97,7 @@ export const createFaculty = async (req, res) => {
       employeeId,
       phoneNumber,
       designation,
-      department
+      department,
     });
 
     await faculty.save();
@@ -106,24 +107,24 @@ export const createFaculty = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Faculty created successfully',
-      data: { faculty: facultyData }
+      message: "Faculty created successfully",
+      data: { faculty: facultyData },
     });
   } catch (error) {
-    console.error('Create faculty error:', error);
-    
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map(err => err.message);
+    console.error("Create faculty error:", error);
+
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        errors
+        message: "Validation failed",
+        errors,
       });
     }
 
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };
@@ -136,7 +137,7 @@ export const bulkCreateFaculty = async (req, res) => {
     if (!Array.isArray(facultyData) || facultyData.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Faculty data array is required'
+        message: "Faculty data array is required",
       });
     }
 
@@ -146,27 +147,33 @@ export const bulkCreateFaculty = async (req, res) => {
     for (let i = 0; i < facultyData.length; i++) {
       try {
         const facultyInfo = facultyData[i];
-        
+
         // Check if faculty already exists
-        const existingFaculty = await Faculty.findOne({ 
-          $or: [{ email: facultyInfo.email }, { employeeId: facultyInfo.employeeId }] 
+        const existingFaculty = await Faculty.findOne({
+          $or: [
+            { email: facultyInfo.email },
+            { employeeId: facultyInfo.employeeId },
+          ],
         });
 
         if (existingFaculty) {
           errors.push({
             row: i + 1,
-            message: `Faculty with email ${facultyInfo.email} or employee ID ${facultyInfo.employeeId} already exists`
+            message: `Faculty with email ${facultyInfo.email} or employee ID ${facultyInfo.employeeId} already exists`,
           });
           continue;
         }
 
         // Hash password
         const saltRounds = 12;
-        const hashedPassword = await bcrypt.hash(facultyInfo.password, saltRounds);
+        const hashedPassword = await bcrypt.hash(
+          facultyInfo.password,
+          saltRounds
+        );
 
         const faculty = new Faculty({
           ...facultyInfo,
-          password: hashedPassword
+          password: hashedPassword,
         });
 
         await faculty.save();
@@ -174,11 +181,10 @@ export const bulkCreateFaculty = async (req, res) => {
         const facultyDataResult = faculty.toObject();
         delete facultyDataResult.password;
         results.push(facultyDataResult);
-
       } catch (error) {
         errors.push({
           row: i + 1,
-          message: error.message
+          message: error.message,
         });
       }
     }
@@ -189,14 +195,14 @@ export const bulkCreateFaculty = async (req, res) => {
       data: {
         created: results,
         errors: errors,
-        totalProcessed: facultyData.length
-      }
+        totalProcessed: facultyData.length,
+      },
     });
   } catch (error) {
-    console.error('Bulk create faculty error:', error);
+    console.error("Bulk create faculty error:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };
@@ -211,58 +217,69 @@ export const createFacultyTimetable = async (req, res) => {
     if (!faculty) {
       return res.status(404).json({
         success: false,
-        message: 'Faculty not found'
+        message: "Faculty not found",
       });
     }
 
-    // Check if timetable already exists
-    const existingTimetable = await Timetable.findOne({
-      facultyId: facultyId,
-      semester: semester,
-      academicYear: academicYear
-    });
-
-    if (existingTimetable) {
-      return res.status(400).json({
-        success: false,
-        message: 'Timetable for this faculty, semester, and academic year already exists'
-      });
-    }
-
-    const timetable = new Timetable({
+    // Create a versioned FacultyTimetable document (if one doesn't already exist)
+    const existing = await FacultyTimetable.findOne({
       facultyId,
-      semester,
       academicYear,
-      timeSlots
+      semester,
+    });
+    if (existing) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Faculty timetable already exists for this academic year & semester",
+        });
+    }
+
+    const facultyTimetable = new FacultyTimetable({
+      facultyId,
+      academicYear,
+      semester,
+      versions: [
+        {
+          label: "default",
+          timeSlots: timeSlots || [],
+          updatedAt: new Date(),
+        },
+      ],
+      currentVersionLabel: "default",
     });
 
-    await timetable.save();
+    await facultyTimetable.save();
 
-    // Update faculty's timetableId reference
+    // Update faculty's timetableId reference to point to the new facultyTimetable
     await Faculty.findByIdAndUpdate(facultyId, {
-      timetableId: timetable._id
+      timetableId: facultyTimetable._id,
     });
 
-    res.status(201).json({
-      success: true,
-      message: 'Faculty timetable created successfully',
-      data: { timetable }
-    });
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: "Faculty timetable created successfully",
+        data: { facultyTimetable },
+      });
   } catch (error) {
-    console.error('Create faculty timetable error:', error);
-    
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map(err => err.message);
+    console.error("Create faculty timetable error:", error);
+
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        errors
+        message: "Validation failed",
+        errors,
       });
     }
 
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };
@@ -277,7 +294,7 @@ export const createClassTimetable = async (req, res) => {
     if (!faculty) {
       return res.status(404).json({
         success: false,
-        message: 'Faculty not found'
+        message: "Faculty not found",
       });
     }
 
@@ -285,31 +302,31 @@ export const createClassTimetable = async (req, res) => {
       facultyId,
       semester,
       academicYear,
-      timeSlots
+      timeSlots,
     });
 
     await timetable.save();
 
     res.status(201).json({
       success: true,
-      message: 'Class timetable created successfully',
-      data: { timetable }
+      message: "Class timetable created successfully",
+      data: { timetable },
     });
   } catch (error) {
-    console.error('Create class timetable error:', error);
-    
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map(err => err.message);
+    console.error("Create class timetable error:", error);
+
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        errors
+        message: "Validation failed",
+        errors,
       });
     }
 
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };
@@ -318,18 +335,18 @@ export const createClassTimetable = async (req, res) => {
 export const getAllFaculties = async (req, res) => {
   try {
     const faculties = await Faculty.find({ isActive: true })
-      .select('-password')
+      .select("-password")
       .sort({ name: 1 });
 
     res.status(200).json({
       success: true,
-      data: { faculties }
+      data: { faculties },
     });
   } catch (error) {
-    console.error('Get all faculties error:', error);
+    console.error("Get all faculties error:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };
@@ -338,18 +355,18 @@ export const getAllFaculties = async (req, res) => {
 export const getAllTimetables = async (req, res) => {
   try {
     const timetables = await Timetable.find({ isActive: true })
-      .populate('facultyId', 'name email employeeId department')
+      .populate("facultyId", "name email employeeId department")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
-      data: { timetables }
+      data: { timetables },
     });
   } catch (error) {
-    console.error('Get all timetables error:', error);
+    console.error("Get all timetables error:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };

@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import './SwapRequestModal.css';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import "./SwapRequestModal.css";
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = "http://localhost:3000/api";
 
 const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
-  const [reason, setReason] = useState('');
-  const [swapDate, setSwapDate] = useState('');
+  const [reason, setReason] = useState("");
+  const [swapDate, setSwapDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -15,61 +15,52 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
       // Set default swap date to next working day
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
-      setSwapDate(tomorrow.toISOString().split('T')[0]);
+      setSwapDate(tomorrow.toISOString().split("T")[0]);
     }
   }, [isOpen, swapData]);
 
+  // Only render modal if all required swapData fields are present
+  if (
+    !isOpen ||
+    !swapData ||
+    !swapData.requesterClass ||
+    !swapData.targetClass ||
+    !swapData.selectedClass
+  ) {
+    return null;
+  }
+
+  // Helper to check all required fields before submit
+  const hasAllFields = () => {
+    return (
+      swapData?.requesterClass?.day &&
+      swapData?.requesterClass?.period !== undefined &&
+      swapData?.requesterClass?.classTimetableId &&
+      swapData?.targetClass?.day &&
+      swapData?.targetClass?.period !== undefined &&
+      swapData?.targetClass?.classTimetableId &&
+      swapData?.targetClass?.slot?.facultyId &&
+      swapData?.selectedClass?.branch &&
+      swapData?.selectedClass?.year &&
+      swapData?.selectedClass?.section &&
+      swapDate &&
+      reason.trim()
+    );
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!reason.trim() || !swapDate) {
-      alert('Please fill in all required fields kl');
+
+    if (!hasAllFields()) {
+      alert("Missing required swap details. Please check your selections.");
+      setSubmitting(false);
       return;
     }
 
     try {
       setSubmitting(true);
-      const token = localStorage.getItem('token');
-      
-      const requesterClass = {
-        day: swapData.requesterClass.day,
-        periods: [swapData.requesterClass.period],
-        subject: swapData.requesterClass.slot.subject,
-        branch: swapData.selectedClass?.branch || 'CSE',
-        semester: swapData.selectedClass?.year || '3rd Year',
-        section: swapData.selectedClass?.section || 'A',
-        room: swapData.requesterClass.slot.room,
-        isLab: !!swapData.requesterClass.slot.isLab
-      };
+      const token = localStorage.getItem("token");
 
-      const targetClass = {
-        day: swapData.targetClass.day,
-        periods: [swapData.targetClass.period],
-        subject: swapData.targetClass.slot.subject,
-        branch: swapData.selectedClass?.branch || 'CSE',
-        semester: swapData.selectedClass?.year || '3rd Year',
-        section: swapData.selectedClass?.section || 'A',
-        room: swapData.targetClass.slot.room,
-        isLab: !!swapData.targetClass.slot.isLab
-      };
-
-      // Get target faculty ID from the slot data
-      const targetFacultyId = swapData.targetClass.slot.facultyId;
-      if (!targetFacultyId) {
-        alert('Could not determine target faculty. Please select a slot that has an assigned faculty.');
-        setSubmitting(false);
-        return;
-      }
-
-      // New compact payload (class-centric). We also send branch/year/section to allow backend lookup if ids are not provided.
-      console.log('Submitting swap:', {
-        yourClassId: swapData.requesterClass.classTimetableId,
-        requestedClassId: swapData.targetClass.classTimetableId,
-        requesterClass: swapData.requesterClass,
-        targetClass: swapData.targetClass
-      });
-      
       const compactPayload = {
         yourClassId: swapData.requesterClass.classTimetableId,
         requestedClassId: swapData.targetClass.classTimetableId,
@@ -77,50 +68,36 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
         yourPeriod: Number(swapData.requesterClass.period),
         requestedDay: swapData.targetClass.day,
         requestedPeriod: Number(swapData.targetClass.period),
-        branch: swapData.selectedClass?.branch,
-        year: swapData.selectedClass?.year,
-        section: swapData.selectedClass?.section,
         swapDate,
-        reason
+        reason,
+        targetFacultyId: swapData.targetClass.slot?.facultyId,
       };
-         
-      // const compactPayload = {
-      //   yourClassId: swapData.classTimetableId || null,
-      //   requestedClassId: swapData.classTimetableId || null,
-      //   yourDay: swapData.requesterClass.day,
-      //   yourPeriod: Number(swapData.requesterClass.period),
-      //   requestedDay: swapData.targetClass.day,
-      //   requestedPeriod: Number(swapData.targetClass.period),
-      //   branch: swapData.selectedClass?.branch,
-      //   year: swapData.selectedClass?.year,
-      //   section: swapData.selectedClass?.section,
-      //   swapDate,
-      //   reason
-      // };
-
-      
 
       await axios.post(`${API_BASE_URL}/class-swap/create`, compactPayload, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       });
 
-      alert('Swap request sent successfully!');
+      alert("Swap request sent successfully!");
       onClose();
-      
+
       // Reset form
-      setReason('');
-      setSwapDate('');
+      setReason("");
+      setSwapDate("");
     } catch (error) {
-      console.error('Error creating swap request:', error);
-      alert('Failed to send swap request. Please try again.');
+      console.error("Error creating swap request:", error);
+      alert("Failed to send swap request. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    setReason('');
-    setSwapDate('');
+    setReason("");
+    setSwapDate("");
     onClose();
   };
 
@@ -131,7 +108,9 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Request Class Swap</h2>
-          <button className="close-btn" onClick={handleClose}>×</button>
+          <button className="close-btn" onClick={handleClose}>
+            ×
+          </button>
         </div>
 
         <div className="modal-body">
@@ -142,20 +121,36 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
               <div className="class-item requester-class">
                 <h4>Your Class</h4>
                 <div className="class-details">
-                  <p><strong>Day:</strong> {swapData?.requesterClass.day}</p>
-                  <p><strong>Period:</strong> {swapData?.requesterClass.period}</p>
-                  <p><strong>Time:</strong> {getPeriodTime(swapData?.requesterClass.period)}</p>
+                  <p>
+                    <strong>Day:</strong> {swapData?.requesterClass?.day ?? "-"}
+                  </p>
+                  <p>
+                    <strong>Period:</strong>{" "}
+                    {swapData?.requesterClass?.period ?? "-"}
+                  </p>
+                  <p>
+                    <strong>Time:</strong>{" "}
+                    {getPeriodTime(swapData?.requesterClass?.period)}
+                  </p>
                 </div>
               </div>
-              
+
               <div className="swap-arrow">⇄</div>
-              
+
               <div className="class-item target-class">
                 <h4>Requested Class</h4>
                 <div className="class-details">
-                  <p><strong>Day:</strong> {swapData?.targetClass.day}</p>
-                  <p><strong>Period:</strong> {swapData?.targetClass.period}</p>
-                  <p><strong>Time:</strong> {getPeriodTime(swapData?.targetClass.period)}</p>
+                  <p>
+                    <strong>Day:</strong> {swapData?.targetClass?.day ?? "-"}
+                  </p>
+                  <p>
+                    <strong>Period:</strong>{" "}
+                    {swapData?.targetClass?.period ?? "-"}
+                  </p>
+                  <p>
+                    <strong>Time:</strong>{" "}
+                    {getPeriodTime(swapData?.targetClass?.period)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -163,7 +158,6 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
 
           {/* Swap Request Form */}
           <form onSubmit={handleSubmit} className="swap-form">
-
             <div className="form-group">
               <label htmlFor="swapDate">Swap Date *</label>
               <input
@@ -172,7 +166,7 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
                 value={swapDate}
                 onChange={(e) => setSwapDate(e.target.value)}
                 className="form-input"
-                min={new Date().toISOString().split('T')[0]}
+                min={new Date().toISOString().split("T")[0]}
                 required
               />
             </div>
@@ -186,7 +180,6 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
                 className="form-textarea"
                 placeholder="Please provide a reason for this class swap request..."
                 rows="4"
-                
               />
               <div className="char-count">{reason.length}/500</div>
             </div>
@@ -205,7 +198,7 @@ const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
                 className="btn btn-primary"
                 disabled={submitting || loading}
               >
-                {submitting ? 'Sending Request...' : 'Send Swap Request'}
+                {submitting ? "Sending Request..." : "Send Swap Request"}
               </button>
             </div>
           </form>
@@ -222,9 +215,9 @@ const getPeriodTime = (period) => {
     3: "11:00 - 12:00",
     4: "13:00 - 14:00",
     5: "14:00 - 15:00",
-    6: "15:00 - 16:00"
+    6: "15:00 - 16:00",
   };
-  return periodTimings[period] || '';
+  return periodTimings[period] || "";
 };
 
 export default SwapRequestModal;
