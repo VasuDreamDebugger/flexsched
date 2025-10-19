@@ -762,6 +762,9 @@ export const acceptSwapRequest = async (req, res) => {
         });
       }
 
+      // Get faculty IDs for sync
+      const requesterFacultyId = swapRequest.requesterId;
+      const targetFacultyId = swapRequest.targetFacultyId;
       const requiredFields = [
         "period",
         "day",
@@ -1032,6 +1035,19 @@ export const acceptSwapRequest = async (req, res) => {
           console.log(
             "✅ Both ClassTimetable documents updated with new version for swap."
           );
+
+          // Sync faculty timetables after successful class timetable update
+          try {
+            // Sync requester faculty timetable
+            await syncFacultyToClass(requesterFacultyId, yourClassDoc._id);
+
+            // Sync target faculty timetable
+            await syncFacultyToClass(targetFacultyId, requestedClassDoc._id);
+
+            console.log("✅ Faculty timetables synced successfully");
+          } catch (syncErr) {
+            console.error("❌ Error syncing faculty timetables:", syncErr);
+          }
         } else {
           console.warn("⚠️ One or both ClassTimetable updates failed.");
         }

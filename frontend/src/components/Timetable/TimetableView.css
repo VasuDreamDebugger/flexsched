@@ -159,10 +159,7 @@
 }
 
 /* Period columns */
-.timetable-table th:not(:first-child),
-.timetable-table td:not(:first-child) {
-  width: calc((100% - 120px) / 6); /* Distribute remaining width evenly */
-}
+
 
 .timetable-table th {
   background: #7e97e7;
@@ -231,10 +228,7 @@
   width: 120px; /* Slightly wider for day names */
 }
 
-.timetable-table th:not(:first-child),
-.timetable-table td:not(:first-child) {
-  width: calc((100% - 120px) / 6); /* Equal width for period columns */
-}
+
 
 .timetable-table th {
   background: linear-gradient(135deg, rgb(40, 169, 220), rgb(28, 137, 177));
@@ -278,7 +272,7 @@
 
 .timetable-cell:hover {
   transform: scale(1.02);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(4, 142, 169, 0.9);
 }
 
 .faculty-class {
@@ -306,13 +300,16 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 5px;
-  border-radius: 6px;
-  transition: all 0.3s ease;
+  padding: 10px;
+  border-radius: 8px;
+  background: white;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .class-slot:hover {
-  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.02);
+  box-shadow: 0 4px 8px rgba(6, 146, 170, 0.8);
 }
 
 .subject {
@@ -396,9 +393,18 @@
   font-size: 18px;
   text-align: center;
 }
+.swap-actions{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
 
 .class-details p {
-  margin: 8px 0}
+  margin: 8px 0;
+}
 
 
  .skeleton-container {
@@ -410,12 +416,14 @@
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
+
 .skeleton-header {
   height: 40px;
-  width: 40%;
-  margin-bottom: 1.5rem;
-  background-color: #09b6bc;
-  border-radius: 4px;
+  width: 100%;
+  overflow-x: auto; /* Enable horizontal scroll on very small screens */
+  margin: 0;
+  padding: 0;
+  border-radius: 8px;
 }
 
 .skeleton-grid {

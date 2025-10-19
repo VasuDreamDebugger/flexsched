@@ -91,6 +91,35 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
     6: { start: "15:00", end: "16:00" },
   };
 
+  // Function to generate a consistent color for a subject
+  const getSubjectColor = (subject) => {
+    // List of predefined colors for subjects
+    const colors = [
+      "#4CAF50",
+      "#2196F3",
+      "#9C27B0",
+      "#FF9800",
+      "#E91E63",
+      "#00BCD4",
+      "#FF5722",
+      "#8BC34A",
+      "#3F51B5",
+      "#FFEB3B",
+      "#795548",
+      "#009688",
+    ];
+
+    // Create a hash of the subject name to get a consistent index
+    let hash = 0;
+    for (let i = 0; i < subject.length; i++) {
+      hash = subject.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    // Use the hash to pick a color
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+
   // Fetch faculty timetable (current/default)
   const fetchFacultyTimetable = useCallback(async () => {
     try {
@@ -432,6 +461,12 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
                       {slot ? (
                         <div
                           className={`class-slot ${slot.isLab ? "lab" : ""}`}
+                          style={{
+                            borderColor: getSubjectColor(slot.subject),
+                            borderWidth: "0px",
+                            borderStyle: "solid",
+                            borderRadius: "8px",
+                          }}
                         >
                           <div className="subject">{slot.subject}</div>
                           {slot.isLab && <div className="lab-badge">Lab</div>}
@@ -491,6 +526,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
       };
 
       onSwapRequest(swapData);
+      setSelectedPeriods([]);
     }
   };
 
@@ -654,7 +690,9 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
                     <strong>Subject:</strong> {selectedPeriods[1].slot.subject}
                   </p>
                   <p>
-                    <strong>Faculty:</strong> {selectedPeriods[1].slot.faculty}
+                    {console.log("selected slot", selectedPeriods[1].slot)}
+                    <strong>Faculty:</strong>{" "}
+                    {selectedPeriods[1].slot.facultyId?.name}
                   </p>
                   <p>
                     <strong>Time:</strong>{" "}
