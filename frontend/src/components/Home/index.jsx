@@ -4,11 +4,15 @@ import FacultyLogin from "../FacultyLogin";
 import Header from "../Header";
 import Footer from "../Footer/Footer";
 import StudentDashboard from "../StudentDashboard/StudentDashboard";
+import { useModal } from "../../contexts/modalContext";
 import "./index.css";
+import DeveloperLoginModal from "../Developer/DeveloperLoginModal";
 
 const Home = () => {
   const [showStudent, setShowStudent] = useState(false);
+  const [showDeveloperModal, setShowDeveloperModal] = useState(false);
   const navigate = useNavigate();
+  const { openFacultyModal } = useModal();
 
   const features = [
     {
@@ -50,6 +54,10 @@ const Home = () => {
           {/* <Header onStudentClick={() => setShowStudent(true)} /> */}
           <Header />
           <FacultyLogin />
+          <DeveloperLoginModal
+            open={showDeveloperModal}
+            onClose={() => setShowDeveloperModal(false)}
+          />
 
           <div className="bg-container w-100 d-flex flex-column align-items-center">
             <div style={{ height: "100px" }} />
@@ -63,10 +71,10 @@ const Home = () => {
                 institutions.
               </p>
               <div className="m-4 d-flex gap-3 justify-content-center">
-                 <button
+                <button
                   type="button"
                   className="btn get-btn"
-                  onClick={() => navigate("/signup")} // ✅ navigate to signup
+                  onClick={openFacultyModal} // ✅ navigate to signup
                 >
                   Get Started
                 </button>
@@ -80,7 +88,7 @@ const Home = () => {
                 <button
                   type="button"
                   className="btn developer-btn"
-                  onClick={() => navigate("/developer")} // ✅ navigate to Developer page
+                  onClick={() => setShowDeveloperModal(true)}
                 >
                   Developer
                 </button>

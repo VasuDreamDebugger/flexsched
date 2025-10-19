@@ -1,11 +1,12 @@
 import ClassSwap from "../Models/ClassSwap.js";
 import Faculty from "../Models/Faculty.js";
 import Timetable from "../Models/Timetable.js";
-// import {
-//   sendSwapRequestNotification,
-//   sendSwapResponseNotification,
-//   sendStudentNotification,
-// } from "../utils/emailService.js";
+import {
+  sendSwapRequestNotification,
+  sendSwapResponseNotification,
+} from "../utils/emailService.js";
+
+//sendStudentNotification,
 import mongoose from "mongoose";
 import ClassTimetable from "../Models/ClassTimetable.js";
 import FacultyTimetable from "../Models/FacultyTimetable.js";
@@ -14,6 +15,33 @@ import {
   syncFacultyToClass,
   getClassTimetable as svcGetClassTimetable,
 } from "../services/timetableSync.js";
+
+// Validates that a slot has the required day and period fields
+const isValidSlot = (s) => {
+  if (!s || typeof s !== "object") return false;
+  return (
+    typeof s.day === "string" &&
+    typeof s.period === "number" &&
+    !isNaN(s.period)
+  );
+};
+
+// Safely attaches classTimetableId to valid slots
+const attachTimetableId = (slots = [], id) => {
+  if (!id) {
+    console.error("[attachTimetableId] Invalid or missing timetable ID");
+    return [];
+  }
+
+  if (!Array.isArray(slots)) {
+    console.error("[attachTimetableId] Invalid slots array", typeof slots);
+    return [];
+  }
+
+  return slots
+    .filter(isValidSlot)
+    .map((s) => ({ ...s, classTimetableId: String(id) }));
+};
 
 // Dev helper: resolve provided classTimetable ids and return document presence
 export const debugResolveClassTimetables = async (req, res) => {
@@ -323,33 +351,11 @@ export const createSwapRequest = async (req, res) => {
         typeofPeriod: typeof yourPeriod,
       });
 
-      // console.log(
-      //   "Slot types:",
-      //   yourVersion.timeSlots.map((s) => ({
-      //     day: s.day,
-      //     period: s.period,
-      //     typeofPeriod: typeof s.period,
-      //   }))
-      // );
-      // const testMatch = yourVersion.timeSlots.find(
-      //   (s) => s.day === "Monday" && s.period === 2
-      // );
-      // console.log("Manual testMatch:", testMatch);
-      // console.log(
-      //   "About to run .find() on yourVersion.label:",
-      //   yourVersion?.label
-      // );
-      // console.log("TimeSlots length:", yourVersion?.timeSlots?.length);
-
       const reqSlot = yourVersion?.timeSlots?.find(
         (s) =>
           s.day.toLowerCase().trim() === yourDay.toLowerCase().trim() &&
           s.period === Number(yourPeriod)
       );
-      // console.log("reqSlot result:", reqSlot);
-      // console.log("Final check before condition:", { reqSlot });
-      // console.log("Type of reqSlot:", typeof reqSlot);
-      // console.log("Is reqSlot truthy?", !!reqSlot);
 
       if (reqSlot === null || typeof reqSlot === "undefined") {
         return res.status(400).json({
@@ -513,17 +519,17 @@ export const createSwapRequest = async (req, res) => {
 
     // Send email notification to target faculty
     try {
-      // await sendSwapRequestNotification(
-      //   targetFaculty.email,
-      //   req.faculty.name,
-      //   targetFaculty.name,
-      //   {
-      //     swapDate: swapRequest.swapDate,
-      //     reason: swapRequest.reason,
-      //     requesterClass: requesterClass,
-      //     targetClass: targetClass,
-      //   }
-      // );
+      await sendSwapRequestNotification(
+        targetFaculty.email,
+        req.faculty.name,
+        targetFaculty.name,
+        {
+          swapDate: swapRequest.swapDate,
+          reason: swapRequest.reason,
+          requesterClass: requesterClass,
+          targetClass: targetClass,
+        }
+      );
     } catch (emailError) {
       console.error("Email notification failed:", emailError);
       // Don't fail the request if email fails
@@ -683,20 +689,20 @@ export const acceptSwapRequest = async (req, res) => {
     );
 
     // Send email notification to requester
-    // try {
-    //   await sendSwapResponseNotification(
-    //     swapRequest.requesterId.email,
-    //     req.faculty.name,
-    //     "accepted",
-    //     {
-    //       responseMessage: message || "Swap request accepted",
-    //       requesterClass: swapRequest.requesterClass,
-    //       targetClass: swapRequest.targetClass,
-    //     }
-    //   );
-    // } catch (emailError) {
-    //   console.error("Email notification failed:", emailError);
-    // }
+    try {
+      await sendSwapResponseNotification(
+        swapRequest.requesterId.email,
+        req.faculty.name,
+        "accepted",
+        {
+          responseMessage: message || "Swap request accepted",
+          requesterClass: swapRequest.requesterClass,
+          targetClass: swapRequest.targetClass,
+        }
+      );
+    } catch (emailError) {
+      console.error("Email notification failed:", emailError);
+    }
 
     // Update timetables when swap is accepted: swap matching timeSlots between both faculties
     // ClassTimetable update handled later in a single, consolidated block.
@@ -867,15 +873,29 @@ export const acceptSwapRequest = async (req, res) => {
         }
 
         // Swap the entire slot objects (deep-cloned) so we preserve all metadata
-        const tempSlot = JSON.parse(JSON.stringify(updatedSlots[swapIdx]));
-        updatedSlots[swapIdx] = JSON.parse(
-          JSON.stringify(updatedSlots[otherIdx])
-        );
-        updatedSlots[otherIdx] = tempSlot;
+        // const tempSlot = JSON.parse(JSON.stringify(updatedSlots[swapIdx]));
+        // updatedSlots[swapIdx] = JSON.parse(
+        //   JSON.stringify(updatedSlots[otherIdx])
+        // );
+        // updatedSlots[otherIdx] = tempSlot;
 
-        updatedSlots.forEach((slot, i) =>
-          sanitizeSlotFields(slot, currentVersion.timeSlots[i])
-        );
+        const fieldsToSwap = [
+          "subject",
+          "facultyId",
+          "room",
+          "isLab",
+          "isTheory",
+        ];
+
+        fieldsToSwap.forEach((field) => {
+          const temp = updatedSlots[swapIdx][field];
+          updatedSlots[swapIdx][field] = updatedSlots[otherIdx][field];
+          updatedSlots[otherIdx][field] = temp;
+        });
+
+        // updatedSlots.forEach((slot, i) =>
+        //   sanitizeSlotFields(slot, currentVersion.timeSlots[i])
+        // );
 
         const hasMissingFields = updatedSlots.some((slot) =>
           requiredFields.some((f) => typeof slot[f] === "undefined")
@@ -907,8 +927,20 @@ export const acceptSwapRequest = async (req, res) => {
         }
 
         // Now write the new slots into the updated version
-        // Deep clone slots and reassign to ensure Mongoose detects the change
-        updatedVersion.timeSlots = JSON.parse(JSON.stringify(updatedSlots));
+        // Deep clone slots, validate them, and attach the correct timetable ID
+        const validatedSlots = attachTimetableId(updatedSlots, classDoc._id);
+        if (validatedSlots.length !== updatedSlots.length) {
+          console.warn(
+            "[swap:update] Some slots were invalid and filtered out",
+            {
+              original: updatedSlots.length,
+              valid: validatedSlots.length,
+              filtered: updatedSlots.length - validatedSlots.length,
+            }
+          );
+        }
+
+        updatedVersion.timeSlots = validatedSlots;
         updatedVersion.updatedAt = new Date();
         updatedVersion.updatedBy = updatedBy;
         updatedVersion.swapReference = swapReference;
@@ -1062,16 +1094,16 @@ export const rejectSwapRequest = async (req, res) => {
 
     // Send email notification to requester
     try {
-      // await sendSwapResponseNotification(
-      //   swapRequest.requesterId.email,
-      //   req.faculty.name,
-      //   "rejected",
-      //   {
-      //     responseMessage: message || "Swap request rejected",
-      //     requesterClass: swapRequest.requesterClass,
-      //     targetClass: swapRequest.targetClass,
-      //   }
-      // );
+      await sendSwapResponseNotification(
+        swapRequest.requesterId.email,
+        req.faculty.name,
+        "rejected",
+        {
+          responseMessage: message || "Swap request rejected",
+          requesterClass: swapRequest.requesterClass,
+          targetClass: swapRequest.targetClass,
+        }
+      );
     } catch (emailError) {
       console.error("Email notification failed:", emailError);
     }

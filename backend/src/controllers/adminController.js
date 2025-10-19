@@ -228,13 +228,65 @@ export const createFacultyTimetable = async (req, res) => {
       semester,
     });
     if (existing) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message:
-            "Faculty timetable already exists for this academic year & semester",
-        });
+      return res.status(400).json({
+        success: false,
+        message:
+          "Faculty timetable already exists for this academic year & semester",
+      });
+    }
+
+    // Convert incoming timeSlots (which may contain `periods` array) into
+    // the FacultyTimetable schema which expects single-period slots with `period`, `year`, `section`.
+    const normalizedSlots = [];
+
+    if (Array.isArray(timeSlots)) {
+      for (const slot of timeSlots) {
+        // ensure required fields exist on the provided slot
+        const day = slot.day;
+        const subject = slot.subject;
+        const branch = slot.branch;
+        const room = slot.room;
+        const isLab = !!slot.isLab;
+        const year = slot.semester || slot.year || "1st Year";
+        const section = slot.section || "A";
+
+        if (!day || !subject || !branch || !room) {
+          return res
+            .status(400)
+            .json({
+              success: false,
+              message:
+                "Each time slot must include day, subject, branch and room",
+            });
+        }
+
+        // If the slot has `periods` (array), convert each period to its own entry
+        if (Array.isArray(slot.periods) && slot.periods.length > 0) {
+          for (const period of slot.periods) {
+            normalizedSlots.push({
+              day,
+              period,
+              subject,
+              branch,
+              year,
+              section,
+              room,
+              isLab,
+            });
+          }
+        } else if (slot.period) {
+          normalizedSlots.push({
+            day,
+            period: slot.period,
+            subject,
+            branch,
+            year,
+            section,
+            room,
+            isLab,
+          });
+        }
+      }
     }
 
     const facultyTimetable = new FacultyTimetable({
@@ -244,7 +296,7 @@ export const createFacultyTimetable = async (req, res) => {
       versions: [
         {
           label: "default",
-          timeSlots: timeSlots || [],
+          timeSlots: normalizedSlots,
           updatedAt: new Date(),
         },
       ],
@@ -258,13 +310,11 @@ export const createFacultyTimetable = async (req, res) => {
       timetableId: facultyTimetable._id,
     });
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Faculty timetable created successfully",
-        data: { facultyTimetable },
-      });
+    res.status(201).json({
+      success: true,
+      message: "Faculty timetable created successfully",
+      data: { facultyTimetable },
+    });
   } catch (error) {
     console.error("Create faculty timetable error:", error);
 

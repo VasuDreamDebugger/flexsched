@@ -6,8 +6,8 @@ import FacultyDashboard from "../FacultyDashboard";
 import RequestsPage from "../Requests/RequestsPage";
 import Signup from "../Auth/Signup";
 import StudentDashboard from "../StudentDashboard/StudentDashboard";
-import LearnMore from "../LearnMore/LearnMore";  // ✅ add this
-import Students from "../Students";  // ✅ add this
+import LearnMore from "../LearnMore/LearnMore"; // ✅ add this
+import Students from "../Students"; // ✅ add this
 import DeveloperPage from "../Developer/DeveloperPage";
 import AddFaculty from "../Developer/AddFaculty";
 import AddFacultyTimetable from "../Developer/AddFacultyTimetable";
@@ -19,21 +19,24 @@ const RoutesPage = () => (
     {/* Public Routes */}
     <Route path="/" element={<Home />} />
     <Route path="/signup" element={<Signup />} />
-    <Route path="/learn-more" element={<LearnMore />} />  {/* ✅ added */}
-
+    <Route path="/learn-more" element={<LearnMore />} /> {/* ✅ added */}
     {/* Faculty Routes */}
     <Route path="/facultylogin" element={<FacultyLogin />} />
     <Route path="/faculty" element={<FacultyPage />} />
     <Route path="/facultydashboard" element={<FacultyDashboard />} />
     <Route path="/requests" element={<RequestsPage />} />
-
     {/* Developer Routes */}
     <Route path="/developer" element={<DeveloperPage />} />
     <Route path="/developer/add-faculty" element={<AddFaculty />} />
-    <Route path="/developer/add-faculty-timetable" element={<AddFacultyTimetable />} />
-    <Route path="/developer/add-class-timetable" element={<AddClassTimetable />} />
+    <Route
+      path="/developer/add-faculty-timetable"
+      element={<AddFacultyTimetable />}
+    />
+    <Route
+      path="/developer/add-class-timetable"
+      element={<AddClassTimetable />}
+    />
     <Route path="/developer/add-student" element={<AddStudent />} />
-
     {/* Student Route */}
     <Route path="/students" element={<Students />} /> {/* ✅ lowercase */}
   </Routes>

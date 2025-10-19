@@ -1,16 +1,25 @@
 /* Faculty Page Container */
 .outer-wrapper {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  padding: 20px 0;
+  background: linear-gradient(135deg, #f6f6f6 0%, #bdd0ef 100%);
+  padding: 20px;
+  display: flex;
+  flex-direction: column; /* Stack items vertically */
+  align-items: center; /* Center horizontally */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Faculty Info Card */
 .card-1 {
-  background: linear-gradient(135deg, #a2ccf0, #cce4ff);
+  background: linear-gradient(135deg, #89deeb, #cce4ff);
   border-radius: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  width:95%;
+  text-align: center;
+   
   border: none;
+  margin-left:30px ;
   margin-bottom: 30px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -71,13 +80,20 @@
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+  .outer-wrapper {
+    padding: 15px;
+  }
+}
+
 @media (max-width: 768px) {
   .outer-wrapper {
-    padding: 10px 0;
+    padding: 10px;
   }
   
   .card-1 {
     padding: 20px !important;
+    margin: 10px;
   }
   
   .faculty-info h1 {

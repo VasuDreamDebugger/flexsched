@@ -81,7 +81,7 @@ function FacultyPage() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("faculty");
-    navigate("/facultylogin");
+    navigate("/");
   };
 
   if (loading) {
@@ -103,8 +103,9 @@ function FacultyPage() {
   }
 
   return (
-    <div className="outer-wrapper rounded">
-      <div className="container mt-5">
+    <div className="outer-wrapper">
+      <div className="mt-5">
+        {/* container  */}
         <div className="d-flex justify-content-between card-1 p-3 mb-4">
           <div className="faculty-info">
             <h1>Welcome, {faculty?.name || "Faculty"}</h1>
@@ -122,9 +123,9 @@ function FacultyPage() {
             >
               Dashboard
             </li>
-            <li style={{ listStyle: "none" }} className="fs-5">
+            {/* <li style={{ listStyle: "none" }} className="fs-5">
               Edit Profile
-            </li>
+            </li> */}
             <li
               style={{ listStyle: "none" }}
               className="fs-5"

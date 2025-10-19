@@ -1,15 +1,17 @@
-// import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 import { emailConfig } from "../config/emailConfig.js";
 
 // Simple email service using Gmail SMTP (free)
 const createTransporter = () => {
-  // return nodemailer.createTransport({
-  //   service: 'gmail',
-  //   auth: {
-  //     user: emailConfig.user,
-  //     pass: emailConfig.pass
-  //   }
-  // });
+  return nodemailer.createTransport({
+    host: "smtp.gmail.com", //service: "gmail",
+    port: 587,
+    secure: false,
+    auth: {
+      user: emailConfig.user,
+      pass: emailConfig.pass,
+    },
+  });
 };
 
 export const sendSwapRequestNotification = async (
@@ -86,7 +88,7 @@ export const sendSwapRequestNotification = async (
       `,
     };
 
-    // await transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions);
     console.log(`Swap request notification sent to ${toEmail}`);
     return true;
   } catch (error) {
@@ -158,7 +160,7 @@ export const sendSwapResponseNotification = async (
       `,
     };
 
-    // await transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions);
     console.log(`Swap response notification sent to ${toEmail}`);
     return true;
   } catch (error) {
@@ -167,62 +169,62 @@ export const sendSwapResponseNotification = async (
   }
 };
 
-export const sendStudentNotification = async (
-  studentEmails,
-  swapDetails,
-  action
-) => {
-  try {
-    const transporter = createTransporter();
+// export const sendStudentNotification = async (
+//   studentEmails,
+//   swapDetails,
+//   action
+// ) => {
+//   try {
+//     const transporter = createTransporter();
 
-    const mailOptions = {
-      from: emailConfig.user,
-      to: studentEmails.join(", "),
-      subject: `Class Schedule Update - ${
-        action === "swap" ? "Class Swap" : "Schedule Change"
-      }`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #a2ccf0, #cce4ff); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-            <h2 style="color: #0895c0; margin: 0;">Class Schedule Update</h2>
-          </div>
-          
-          <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-            <h3 style="color: #0895c0; margin-top: 0;">Important Notice</h3>
-            <p>There has been a change in your class schedule due to a faculty class swap.</p>
-            
-            <div style="background: #e9ecef; padding: 15px; border-radius: 8px; margin: 15px 0;">
-              <h4 style="color: #0895c0; margin-top: 0;">Updated Schedule</h4>
-              <p><strong>Date:</strong> ${new Date(
-                swapDetails.swapDate
-              ).toLocaleDateString()}</p>
-              <p><strong>Class:</strong> ${swapDetails.targetClass.subject}</p>
-              <p><strong>Faculty:</strong> ${
-                swapDetails.requesterClass.faculty || "TBD"
-              }</p>
-              <p><strong>Room:</strong> ${swapDetails.targetClass.room}</p>
-              <p><strong>Time:</strong> ${
-                swapDetails.targetClass.day
-              } - Period ${swapDetails.targetClass.periods[0]}</p>
-            </div>
-          </div>
-          
-          <div style="background: #d1ecf1; padding: 15px; border-radius: 8px; margin-top: 20px;">
-            <p style="margin: 0; color: #0c5460; font-size: 14px;">
-              <strong>Note:</strong> Please make note of this change and attend the class at the updated time and location.
-            </p>
-          </div>
-        </div>
-      `,
-    };
+//     const mailOptions = {
+//       from: emailConfig.user,
+//       to: studentEmails.join(", "),
+//       subject: `Class Schedule Update - ${
+//         action === "swap" ? "Class Swap" : "Schedule Change"
+//       }`,
+//       html: `
+//         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//           <div style="background: linear-gradient(135deg, #a2ccf0, #cce4ff); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+//             <h2 style="color: #0895c0; margin: 0;">Class Schedule Update</h2>
+//           </div>
 
-    // await transporter.sendMail(mailOptions);
-    console.log(
-      `Student notification sent to ${studentEmails.length} students`
-    );
-    return true;
-  } catch (error) {
-    console.error("Error sending student notification:", error);
-    return false;
-  }
-};
+//           <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+//             <h3 style="color: #0895c0; margin-top: 0;">Important Notice</h3>
+//             <p>There has been a change in your class schedule due to a faculty class swap.</p>
+
+//             <div style="background: #e9ecef; padding: 15px; border-radius: 8px; margin: 15px 0;">
+//               <h4 style="color: #0895c0; margin-top: 0;">Updated Schedule</h4>
+//               <p><strong>Date:</strong> ${new Date(
+//                 swapDetails.swapDate
+//               ).toLocaleDateString()}</p>
+//               <p><strong>Class:</strong> ${swapDetails.targetClass.subject}</p>
+//               <p><strong>Faculty:</strong> ${
+//                 swapDetails.requesterClass.faculty || "TBD"
+//               }</p>
+//               <p><strong>Room:</strong> ${swapDetails.targetClass.room}</p>
+//               <p><strong>Time:</strong> ${
+//                 swapDetails.targetClass.day
+//               } - Period ${swapDetails.targetClass.periods[0]}</p>
+//             </div>
+//           </div>
+
+//           <div style="background: #d1ecf1; padding: 15px; border-radius: 8px; margin-top: 20px;">
+//             <p style="margin: 0; color: #0c5460; font-size: 14px;">
+//               <strong>Note:</strong> Please make note of this change and attend the class at the updated time and location.
+//             </p>
+//           </div>
+//         </div>
+//       `,
+//     };
+
+//      await transporter.sendMail(mailOptions);
+//     console.log(
+//       `Student notification sent to ${studentEmails.length} students`
+//     );
+//     return true;
+//   } catch (error) {
+//     console.error("Error sending student notification:", error);
+//     return false;
+//   }
+// };

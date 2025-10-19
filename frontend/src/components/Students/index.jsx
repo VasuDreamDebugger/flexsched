@@ -1,535 +1,302 @@
-import './index.css'
+import "./index.css";
+import "./skeleton.css";
 
-import { useState } from 'react';
+import { useState } from "react";
+import { useEffect, useCallback } from "react";
+import axios from "axios";
+
+const LoaderTable = () => {
+  return (
+    <div className="skeleton-timetable">
+      <div className="version-toggle skeleton">
+        <div className="skeleton-button shimmer"></div>
+        <div className="skeleton-button shimmer"></div>
+      </div>
+      <table className="timetable-table">
+        <thead>
+          <tr>
+            <th>
+              <div
+                className="skeleton shimmer"
+                style={{ height: "24px" }}
+              ></div>
+            </th>
+            {periods.map((period) => (
+              <th key={period}>
+                <div
+                  className="skeleton shimmer"
+                  style={{ height: "24px" }}
+                ></div>
+                <div className="skeleton-time shimmer"></div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {days.map((day) => (
+            <tr key={day}>
+              <td>
+                <div
+                  className="skeleton shimmer"
+                  style={{ height: "24px" }}
+                ></div>
+              </td>
+              {periods.map((period) => (
+                <td key={`${day}-${period}`} className="skeleton-cell">
+                  <div className="skeleton-content shimmer"></div>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+// Timetable logic and state
+const API_BASE_URL = "http://localhost:3000/api";
+const days = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+const periods = [1, 2, 3, 4, 5, 6];
+const periodTimings = {
+  1: { start: "09:00", end: "10:00" },
+  2: { start: "10:00", end: "11:00" },
+  3: { start: "11:00", end: "12:00" },
+  4: { start: "13:00", end: "14:00" },
+  5: { start: "14:00", end: "15:00" },
+  6: { start: "15:00", end: "16:00" },
+};
 
 const Students = () => {
-  const [currentBranch, setCurrentBranch] = useState('');
-  const [currentSection, setCurrentSection] = useState('');
-  const [currentScheduleType] = useState('default');
-  const [tableView, setTableView] = useState('default');
-  const [showLoginOverlay, setShowLoginOverlay] = useState(true);
-  const [loginBranch, setLoginBranch] = useState('');
-  const [loginSection, setLoginSection] = useState('');
+  const [year, setYear] = useState("3rd Year");
+  const [branch, setBranch] = useState("CSE");
+  const [section, setSection] = useState("A");
+  const [classTimetableVariant, setClassTimetableVariant] = useState("updated");
+  const [classTimetable, setClassTimetable] = useState(null);
+  const [defaultClassTimetable, setDefaultClassTimetable] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // Sample schedule data
-  const scheduleData = {
-    cse: {
-      1: {
-        default: [
-          { time: '9:00 AM', subject: 'Data Structures', room: 'Room 301', professor: 'Dr. Kumar', status: 'current' },
-          { time: '11:00 AM', subject: 'Computer Networks', room: 'Lab 205', professor: 'Prof. Sharma', status: 'upcoming' },
-          { time: '2:00 PM', subject: 'Database Systems', room: 'Room 302', professor: 'Dr. Patel', status: 'later' },
-          { time: '4:00 PM', subject: 'Software Engineering', room: 'Room 303', professor: 'Prof. Singh', status: 'later' }
-        ],
-        changed: [
-          { time: '9:00 AM', subject: 'Data Structures', room: 'Room 301', professor: 'Dr. Kumar', status: 'current' },
-          { time: '11:00 AM', subject: 'Computer Networks', room: 'Lab 206', professor: 'Prof. Sharma', status: 'upcoming', changed: true },
-          { time: '2:00 PM', subject: 'Machine Learning', room: 'Room 304', professor: 'Dr. Gupta', status: 'later', changed: true },
-          { time: '4:00 PM', subject: 'Software Engineering', room: 'Room 303', professor: 'Prof. Singh', status: 'cancelled', changed: true }
-        ]
-      },
-      2: {
-        default: [
-          { time: '10:00 AM', subject: 'Algorithms', room: 'Room 401', professor: 'Dr. Verma', status: 'current' },
-          { time: '12:00 PM', subject: 'Operating Systems', room: 'Lab 301', professor: 'Prof. Jain', status: 'upcoming' },
-          { time: '3:00 PM', subject: 'Web Development', room: 'Room 402', professor: 'Dr. Agarwal', status: 'later' }
-        ],
-        changed: [
-          { time: '10:00 AM', subject: 'Algorithms', room: 'Room 401', professor: 'Dr. Verma', status: 'current' },
-          { time: '12:00 PM', subject: 'Operating Systems', room: 'Lab 302', professor: 'Prof. Jain', status: 'upcoming', changed: true },
-          { time: '3:00 PM', subject: 'Web Development', room: 'Room 402', professor: 'Dr. Agarwal', status: 'later' }
-        ]
+  // Fetch class timetable
+  const fetchClassTimetable = useCallback(async () => {
+    if (!branch || !year || !section) {
+      setClassTimetable(null);
+      setDefaultClassTimetable(null);
+      return;
+    }
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_BASE_URL}/timetable/classes/v2`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { year, branch, section },
+      });
+      const data = response.data?.data;
+      if (!data) {
+        setClassTimetable(null);
+        setDefaultClassTimetable(null);
+        return;
       }
-    },
-    ece: {
-      1: {
-        default: [
-          { time: '9:00 AM', subject: 'Digital Electronics', room: 'Room 501', professor: 'Dr. Reddy', status: 'current' },
-          { time: '11:00 AM', subject: 'Signal Processing', room: 'Lab 401', professor: 'Prof. Nair', status: 'upcoming' },
-          { time: '2:00 PM', subject: 'Communication Systems', room: 'Room 502', professor: 'Dr. Iyer', status: 'later' }
-        ],
-        changed: [
-          { time: '9:00 AM', subject: 'Digital Electronics', room: 'Room 501', professor: 'Dr. Reddy', status: 'current' },
-          { time: '11:00 AM', subject: 'Signal Processing', room: 'Lab 402', professor: 'Prof. Nair', status: 'upcoming', changed: true },
-          { time: '2:00 PM', subject: 'Microprocessors', room: 'Room 503', professor: 'Dr. Menon', status: 'later', changed: true }
-        ]
-      },
-      2: {
-        default: [
-          { time: '10:00 AM', subject: 'VLSI Design', room: 'Room 601', professor: 'Dr. Pillai', status: 'current' },
-          { time: '1:00 PM', subject: 'Embedded Systems', room: 'Lab 501', professor: 'Prof. Krishnan', status: 'upcoming' },
-          { time: '4:00 PM', subject: 'Control Systems', room: 'Room 602', professor: 'Dr. Raman', status: 'later' }
-        ],
-        changed: [
-          { time: '10:00 AM', subject: 'VLSI Design', room: 'Room 601', professor: 'Dr. Pillai', status: 'current' },
-          { time: '1:00 PM', subject: 'Embedded Systems', room: 'Lab 502', professor: 'Prof. Krishnan', status: 'upcoming', changed: true },
-          { time: '4:00 PM', subject: 'Control Systems', room: 'Room 602', professor: 'Dr. Raman', status: 'later' }
-        ]
-      }
+      const normalizeVersion = (version) => ({
+        ...version,
+        timeSlots: (version.timeSlots || []).map((s) => ({
+          ...s,
+          classTimetableId:
+            (data.meta && data.meta._id && String(data.meta._id)) ||
+            (data.meta && data.meta.id && String(data.meta.id)) ||
+            null,
+        })),
+        meta: data.meta,
+      });
+      setDefaultClassTimetable(normalizeVersion(data.default || {}));
+      setClassTimetable(normalizeVersion(data.updated || data.default || {}));
+    } catch (error) {
+      setClassTimetable(null);
+      setDefaultClassTimetable(null);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [branch, year, section]);
 
-  // Map-driven timetable data for table rendering
-  const daysMeta = [
-    { name: 'Monday', code: 'M' },
-    { name: 'Tuesday', code: 'T' },
-    { name: 'Wednesday', code: 'W' },
-    { name: 'Thursday', code: 'TH' },
-    { name: 'Friday', code: 'F' },
-    { name: 'Saturday', code: 'S' }
-  ];
+  useEffect(() => {
+    fetchClassTimetable();
+  }, [fetchClassTimetable, classTimetableVariant]);
 
-  const periodNumbers = ['1', '2', '3', '4', '5', '6'];
-
-  const timetableData = {
-    default: {
-      M2: 'OS-Lab', M4: 'CN', M5: 'NPTEL', M6: 'NPTEL',
-      T1: 'SE', T2: 'NPTEL', T3: 'NPTEL', T5: 'SE-lab',
-      W1: 'SE', W2: 'OS', W3: 'CN', W5: 'CN-lab',
-      TH2: 'Eng-Lab', TH4: 'OS', TH5: 'NPTEL',
-      F1: 'NPTEL', F2: 'OS', F3: 'SE', F5: '-',
-      S4: 'CN'
-    },
-    updated: {
-      M2: 'OS Lab (205)', M4: 'CN', M5: 'NPTEL', M6: 'NPTEL',
-      T1: 'SE', T2: 'NPTEL', T3: 'CN', T5: 'SE-lab',
-      W1: 'SE', W2: 'OS', W3: 'CN', W5: 'CN Lab (206)',
-      TH2: 'Eng-Lab', TH4: 'OS', TH5: 'NPTEL',
-      F1: 'NPTEL', F2: 'OS', F3: 'SE', F5: 'NPTEL',
-      S4: 'CN'
-    }
-  };
-
-  const changedCellIds = new Set(
-    Object.keys(timetableData.updated).filter((id) => (timetableData.updated[id] || '') !== (timetableData.default[id] || ''))
-  );
-
-  const handleLogin = () => {
-    setCurrentBranch(loginBranch);
-    setCurrentSection(loginSection);
-    setShowLoginOverlay(false);
-  };
-
-  const handleBranchChange = (branch) => {
-    setCurrentBranch(branch);
-    if (!branch) {
-      setCurrentSection('');
-    }
-  };
-
-  const handleSectionChange = (section) => {
-    setCurrentSection(section);
-  };
-
-  const handleScheduleItemClick = (item) => {
-    alert(`${item.subject} at ${item.time}\nClick the location icon for directions to the classroom.`);
-  };
-
-  const handleLocationClick = (e, room) => {
-    e.stopPropagation();
-    alert(`Getting directions to ${room}...`);
-  };
-
-  const handleQuickActionClick = (action) => {
-    alert(`Opening ${action}...`);
-  };
-
-  const handleNotificationClick = () => {
-    alert('You have 3 new notifications:\n• Schedule change for Physics\n• New assignment posted\n• Grade updated for Math Quiz');
-  };
-
-  const renderScheduleItem = (item, index) => {
-    const statusColors = {
-      current: 'status-current',
-      upcoming: 'status-upcoming',
-      later: 'status-later',
-      cancelled: 'status-cancelled'
-    };
-
+  // Highlight changed slots
+  const isChangedSlot = (slot, defaultTimetable, variant) => {
+    if (!slot || !defaultTimetable || variant === "default") return false;
+    const defaultSlot = defaultTimetable.timeSlots?.find(
+      (ts) =>
+        ts.day === slot.day &&
+        (ts.periods?.includes
+          ? ts.periods?.includes(slot.period)
+          : ts.period === slot.period || ts.periods === slot.period)
+    );
+    if (!defaultSlot) return true;
     return (
-      <div
-        key={index}
-        className={`schedule-item ${item.changed ? 'schedule-item-changed' : 'schedule-item-default'}`}
-        onClick={() => handleScheduleItemClick(item)}
-      >
-        <div className="schedule-item-content">
-          <div className="schedule-item-left">
-            <div className="schedule-time">
-              <p className="time-hour">{item.time.split(' ')[0]}</p>
-              <p className="time-period">{item.time.split(' ')[1]}</p>
-            </div>
-            <div className="schedule-details">
-              <h4 className="subject-name">{item.subject}</h4>
-              <p className="room-professor">{item.room} • {item.professor}</p>
-              {item.changed && <p className="change-indicator">⚠️ Schedule Changed</p>}
-            </div>
-          </div>
-          <div className="schedule-item-right">
-            <span className={`status-badge ${statusColors[item.status]}`}>
-              {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-            </span>
-            <button
-              className="location-btn"
-              onClick={(e) => handleLocationClick(e, item.room)}
-            >
-              <span>📍</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      defaultSlot.faculty !== slot.faculty ||
+      defaultSlot.facultyId?.name !== slot.facultyId?.name
     );
   };
 
-  const renderScheduleContent = (type) => {
-    const schedule = scheduleData[currentBranch]?.[currentSection]?.[type];
-    
-    if (!currentBranch || !currentSection) {
-      return (
-        <div className="empty-state">
-          <span className="empty-icon">📚</span>
-          <p>Please select your branch and section to view the {type} schedule</p>
-        </div>
-      );
-    }
-
-    if (!schedule) {
-      return (
-        <div className="empty-state">
-          <span className="empty-icon">❌</span>
-          <p>No schedule found for {currentBranch.toUpperCase()} Section {currentSection}</p>
-        </div>
-      );
-    }
-
+  // Timetable grid rendering
+  const renderTimetable = (
+    timetable,
+    defaultTimetable,
+    variant = "updated"
+  ) => {
+    if (!timetable) return null;
     return (
-      <div className="schedule-list">
-        {schedule.map((item, index) => renderScheduleItem(item, index))}
+      <div className="timetable-section">
+        <h1>vasu</h1>
+        <div className="version-toggle">
+          <button
+            className={variant === "default" ? "active" : ""}
+            onClick={() => setClassTimetableVariant("default")}
+          >
+            Default
+          </button>
+          <button
+            className={variant === "updated" ? "active" : ""}
+            onClick={() => setClassTimetableVariant("updated")}
+          >
+            Updated
+          </button>
+        </div>
+        <table className="timetable-table">
+          <thead>
+            <tr>
+              <th>Day</th>
+              {periods.map((period) => (
+                <th key={period}>
+                  P{period}
+                  <br />
+                  <small>
+                    {periodTimings[period].start} - {periodTimings[period].end}
+                  </small>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {days.map((day) => (
+              <tr key={day}>
+                <td className="day-header">{day}</td>
+                {periods.map((period) => {
+                  const slot = timetable.timeSlots?.find(
+                    (ts) =>
+                      ts.day === day &&
+                      (ts.periods?.includes
+                        ? ts.periods?.includes(period)
+                        : ts.period === period || ts.periods === period)
+                  );
+                  const isChanged = isChangedSlot(
+                    slot,
+                    defaultTimetable,
+                    variant
+                  );
+                  return (
+                    <td
+                      key={`${day}-${period}`}
+                      className={`timetable-cell${
+                        isChanged ? " changed-class" : ""
+                      }`}
+                      title={
+                        slot
+                          ? `Faculty: ${
+                              slot.faculty || slot.facultyId?.name || "-"
+                            }\nRoom: ${slot.room || "-"}\nTime: ${
+                              periodTimings[period].start
+                            } - ${periodTimings[period].end}`
+                          : undefined
+                      }
+                    >
+                      {slot ? (
+                        <div
+                          className={`class-slot${slot.isLab ? " lab" : ""}`}
+                        >
+                          <div className="subject">{slot.subject}</div>
+                          {slot.isLab && <div className="lab-badge">Lab</div>}
+                        </div>
+                      ) : (
+                        <div className="empty-slot">-</div>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     );
-  };
-
-  const getWelcomeText = () => {
-    if (currentBranch && currentSection) {
-      return `Here's the schedule for ${currentBranch.toUpperCase()} Section ${currentSection}`;
-    }
-    return "Please select your branch and section to view your schedule";
   };
 
   return (
-    <div className="student-dashboard">
-      {/* Login Overlay */}
-      {showLoginOverlay && (
-        <div className="login-overlay">
-          <div className="login-modal">
-            <div className="login-header">
-              <div className="login-icon">
-                <span>🎓</span>
-              </div>
-              <h2>Student Login</h2>
-              <p>Select your branch and section to view your timetable</p>
-            </div>
-            
-            <div className="login-form">
-              <div className="form-group">
-                <label>Branch</label>
-                <select
-                  value={loginBranch}
-                  onChange={(e) => setLoginBranch(e.target.value)}
-                >
-                  <option value="">Select Branch</option>
-                  <option value="cse">Computer Science Engineering (CSE)</option>
-                  <option value="ece">Electronics & Communication Engineering (ECE)</option>
-                </select>
-              </div>
-              
-              <div className="form-group">
-                <label>Section</label>
-                <select
-                  value={loginSection}
-                  onChange={(e) => setLoginSection(e.target.value)}
-                  disabled={!loginBranch}
-                >
-                  <option value="">Select Section</option>
-                  <option value="1">Section 1</option>
-                  <option value="2">Section 2</option>
-                  <option value="3">Section 3</option>
-                  <option value="4">Section 4</option>
-                </select>
-              </div>
-              
-              <button
-                className="login-button"
-                onClick={handleLogin}
-                disabled={!loginBranch || !loginSection}
-              >
-                Access Dashboard
-              </button>
-            </div>
+    <div className="students-timetable-container">
+      <div className="class-selection-section">
+        <h3>Class Timetable</h3>
+        <div className="dropdowns-container">
+          <div className="dropdown-group">
+            <label>Year</label>
+            <select
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              className="form-select"
+            >
+              <option value="1st Year">1st Year</option>
+              <option value="2nd Year">2nd Year</option>
+              <option value="3rd Year">3rd Year</option>
+              <option value="4th Year">4th Year</option>
+            </select>
+          </div>
+          <div className="dropdown-group">
+            <label>Branch</label>
+            <select
+              value={branch}
+              onChange={(e) => setBranch(e.target.value)}
+              className="form-select"
+            >
+              <option value="CSE">CSE</option>
+              <option value="IT">IT</option>
+              <option value="ECE">ECE</option>
+              <option value="EEE">EEE</option>
+              <option value="ME">ME</option>
+              <option value="CE">CE</option>
+            </select>
+          </div>
+          <div className="dropdown-group">
+            <label>Section</label>
+            <select
+              value={section}
+              onChange={(e) => setSection(e.target.value)}
+              className="form-select"
+            >
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+              <option value="D">D</option>
+            </select>
           </div>
         </div>
-      )}
-
-      {/* Header */}
-      <header className="header">
-        <div className="header-container">
-          <div className="header-left">
-            <div className="logo">
-              <img
-                src="/logo.jpeg" // Place logo.jpeg in public folder
-                alt="project logo"
-                className="img"
-                style={{ height: "50px" }}
-              />
-            </div>
-            <div className="brand">
-              <h1>FlexSched</h1>
-              <p>Student Dashboard</p>
-            </div>
-          </div>
-          
-          <div className="header-right">
-            <div className="student-selection">
-              <select
-                value={currentBranch}
-                onChange={(e) => handleBranchChange(e.target.value)}
-              >
-                <option value="">Select Branch</option>
-                <option value="cse">CSE</option>
-                <option value="ece">ECE</option>
-              </select>
-              <select
-                value={currentSection}
-                onChange={(e) => handleSectionChange(e.target.value)}
-                disabled={!currentBranch}
-              >
-                <option value="">Select Section</option>
-                <option value="1">Section 1</option>
-                <option value="2">Section 2</option>
-                <option value="3">Section 3</option>
-                <option value="4">Section 4</option>
-              </select>
-            </div>
-            
-            <div className="notification-container">
-              <button className="notification-btn" onClick={handleNotificationClick}>
-                <span>🔔</span>
-                <div className="notification-dot"></div>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="main-container">
-        {/* Welcome Section */}
-        <div className="welcome-section">
-          <h2>Welcome! 👋</h2>
-          <p>{getWelcomeText()}</p>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="stats-grid">
-          <div className="stat-card card-hover">
-            <div className="stat-content">
-              <div className="stat-info">
-                <p className="stat-label">Today's Classes</p>
-                <p className="stat-value">5</p>
-              </div>
-              <div className="stat-icon stat-icon-blue">
-                <span>📖</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="stat-card card-hover">
-            <div className="stat-content">
-              <div className="stat-info">
-                <p className="stat-label">Today's Labs</p>
-                <p className="stat-value stat-value-red fs-6" >CN LAB</p>
-                <p className="stat-value stat-value-red">OS LAB</p>
-              </div>
-              <div className="stat-icon stat-icon-red">
-                <span>📝</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="stat-card card-hover">
-            <div className="stat-content">
-              <div className="stat-info">
-                <p className="stat-label">Leisures</p>
-                <p className="stat-value stat-value-green">2</p>
-              </div>
-              <div className="stat-icon stat-icon-green">
-                <span>✅</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* <div className="stat-card card-hover">
-            <div className="stat-content">
-              <div className="stat-info">
-                <p className="stat-label">GPA</p>
-                <p className="stat-value stat-value-purple">3.8</p>
-              </div>
-              <div className="stat-icon stat-icon-purple">
-                <span>🎯</span>
-              </div>
-            </div>
-          </div> */}
-        </div>
-
-        <div className="content-grid">
-          {/* Schedule Section */}
-          <div className="schedule-section">
-            <div className="schedule-card">
-              <div className="schedule-header">
-                <h3>{`Schedule - ${tableView === 'default' ? 'Default' : 'Updated'}`}</h3>
-                <div className="schedule-tabs">
-                  <button
-                    className={`schedule-tab ${tableView === 'default' ? 'schedule-tab-active' : ''}`}
-                    onClick={() => setTableView('default')}
-                  >
-                    Default
-                  </button>
-                  <button
-                    className={`schedule-tab ${tableView === 'updated' ? 'schedule-tab-active' : ''}`}
-                    onClick={() => setTableView('updated')}
-                  >
-                    Updated
-                  </button>
-                </div>
-              </div>
-              <div className="schedule-tabs">
-                <div className="timetable-wrapper">
-                  <table className="timetable">
-                      <thead>
-                        <tr>
-                          <th>Period</th>
-                          <th>P1</th>
-                          <th>P2</th>
-                          <th>P3</th>
-                          <th>P4</th>
-                          <th>P5</th>
-                          <th>P6</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {daysMeta.map((day) => (
-                          <tr key={day.code}>
-                            <td>{day.name}</td>
-                            {periodNumbers.map((num) => {
-                              const cellId = `${day.code}${num}`;
-                              const value = (timetableData[tableView][cellId] || '');
-                              const isChanged = tableView === 'updated' && changedCellIds.has(cellId);
-                              return (
-                                <td key={cellId} className={isChanged ? 'cell-changed' : ''}>{value}</td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                  </table>
-                </div>
-              </div>
-              
-              <div className="schedule-content">
-                {currentScheduleType === 'default' ? 
-                  renderScheduleContent('default') : 
-                  renderScheduleContent('changed')
-                }
-              </div>
-              
-              <div className="schedule-footer">
-                <button className="view-full-btn">
-                  View Full Timetable →
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="sidebar">
-            {/* Quick Actions */}
-            {/* <div className="sidebar-card">
-              <h3>Quick Actions</h3>
-              <div className="quick-actions">
-                <button 
-                  className="quick-action-btn"
-                  onClick={() => handleQuickActionClick('View Full Timetable')}
-                >
-                  <span>📅</span>
-                  <span>View Full Timetable</span>
-                </button>
-                <button 
-                  className="quick-action-btn"
-                  onClick={() => handleQuickActionClick('Attendance Report')}
-                >
-                  <span>📊</span>
-                  <span>Attendance Report</span>
-                </button>
-                <button 
-                  className="quick-action-btn"
-                  onClick={() => handleQuickActionClick('Assignment Tracker')}
-                >
-                  <span>📋</span>
-                  <span>Assignment Tracker</span>
-                </button>
-                <button 
-                  className="quick-action-btn"
-                  onClick={() => handleQuickActionClick('Grade Summary')}
-                >
-                  <span>🎓</span>
-                  <span>Grade Summary</span>
-                </button>
-              </div>
-            </div> */}
-
-            {/* Upcoming Assignments */}
-            {/* <div className="sidebar-card">
-              <h3>Upcoming Assignments</h3>
-              <div className="assignments">
-                <div className="assignment-item assignment-urgent">
-                  <div className="assignment-info">
-                    <p className="assignment-title">Math Assignment</p>
-                    <p className="assignment-due">Due Tomorrow</p>
-                  </div>
-                  <span className="assignment-icon">⚠️</span>
-                </div>
-                <div className="assignment-item assignment-warning">
-                  <div className="assignment-info">
-                    <p className="assignment-title">Physics Lab Report</p>
-                    <p className="assignment-due">Due in 3 days</p>
-                  </div>
-                  <span className="assignment-icon">📝</span>
-                </div>
-                <div className="assignment-item assignment-info">
-                  <div className="assignment-info">
-                    <p className="assignment-title">CS Project</p>
-                    <p className="assignment-due">Due next week</p>
-                  </div>
-                  <span className="assignment-icon">💻</span>
-                </div>
-              </div>
-            </div> */}
-
-            {/* Recent Notifications */}
-            {/* <div className="sidebar-card">
-              <h3>Notifications</h3>
-              <div className="notifications">
-                <div className="notification-item notification-blue">
-                  <p className="notification-title">Schedule Change</p>
-                  <p className="notification-desc">Physics class moved to Lab 206</p>
-                  <p className="notification-time">2 hours ago</p>
-                </div>
-                <div className="notification-item notification-green">
-                  <p className="notification-title">Grade Posted</p>
-                  <p className="notification-desc">Math Quiz - Grade: A-</p>
-                  <p className="notification-time">1 day ago</p>
-                </div>
-              </div>
-            </div> */}
-          </div>
+        <div className="table-wrapper">
+          {loading ? (
+            <LoaderTable />
+          ) : (
+            renderTimetable(
+              classTimetableVariant === "default"
+                ? defaultClassTimetable
+                : classTimetable,
+              defaultClassTimetable,
+              classTimetableVariant
+            )
+          )}
         </div>
       </div>
     </div>

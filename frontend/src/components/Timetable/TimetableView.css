@@ -1,11 +1,12 @@
 /* Timetable Container */
 .timetable-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  width:100%; /* Use more horizontal space */
+  /* max-width: 1400px; Prevent excessive width on ultra-wide screens */
+  /* margin: 0 auto; */
+   padding: 20px;
+  background: linear-gradient(135deg, #e7eaf0 0%, #c3cfe2 100%);
   border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 }
 
 /* Section Headers */
@@ -25,11 +26,29 @@
   -webkit-text-fill-color: transparent;
 }
 
-.instruction-text {
-  color: rgb(16, 161, 165);
-  font-size: 14px;
-  font-style: italic;
-  margin: 0;
+/* Version Toggle */
+.version-toggle {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding: 5px;
+}
+
+.version-toggle button {
+  padding: 8px 20px;
+  border: 2px solid #7e97e7;
+  background: transparent;
+  color: #7e97e7;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.version-toggle button.active {
+  background: #7e97e7;
+  color: white;
 }
 
 /* Class Selection Section */
@@ -94,69 +113,167 @@
 
 /* Timetable Section */
 .timetable-section {
-  background: white;
-  border-radius: 15px;
+  width: 100%;
   padding: 25px;
   margin: 20px 0;
+  background: white;
+  border-radius: 15px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 }
 
+/* Table Container */
+.table-wrapp {
+  width: 100%;
+  overflow-x: auto; /* Enable horizontal scroll on very small screens */
+  margin: 0;
+  padding: 0;
+  border-radius: 8px;
+}
+
+/* Timetable */
+.timetable-table {
+  width: 100%;
+  min-width: 800px; /* Prevent cells from becoming too narrow */
+  table-layout: fixed; /* Ensure equal column widths */
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Table Cells */
+.timetable-table th,
+.timetable-table td {
+  border: 1px solid #e2e8f0;
+  padding: 20px 10px;
+  text-align: center;
+  height: 100px; /* Taller cells for better readability */
+  vertical-align: middle;
+}
+
+/* First column (days) */
+.timetable-table th:first-child,
+.timetable-table td:first-child {
+  width: 120px; /* Fixed width for day names */
+}
+
+/* Period columns */
+.timetable-table th:not(:first-child),
+.timetable-table td:not(:first-child) {
+  width: calc((100% - 120px) / 6); /* Distribute remaining width evenly */
+}
+
+.timetable-table th {
+  background: #7e97e7;
+  color: white;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
+.timetable-table tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+.timetable-table td {
+  color: #475569;
+  font-size: 14px;
+}
+
+.timetable-table td:first-child {
+  font-weight: 600;
+  color: #1e293b;
+  background-color: #f1f5f9;
+}
+
+/* Changed Class Highlight */
+.changed-class {
+  background-color: #fef3c7 !important;
+  position: relative;
+}
+
+.changed-class::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  border-width: 0 15px 15px 0;
+  border-style: solid;
+  border-color: #f59e0b transparent;
+}
+
+/* Table Wrapper */
 .table-wrapper {
-  overflow-x: auto;
+  width: 100%;
+  box-sizing: border-box;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin: 0; /* Remove margin */
+  padding: 0; /* Remove padding */
 }
 
 /* Timetable Table */
 .timetable-table {
   width: 100%;
-  border-collapse: collapse;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 2px;
   background: white;
   border-radius: 10px;
   overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Column widths */
+.timetable-table th:first-child,
+.timetable-table td:first-child {
+  width: 120px; /* Slightly wider for day names */
+}
+
+.timetable-table th:not(:first-child),
+.timetable-table td:not(:first-child) {
+  width: calc((100% - 120px) / 6); /* Equal width for period columns */
 }
 
 .timetable-table th {
   background: linear-gradient(135deg, rgb(40, 169, 220), rgb(28, 137, 177));
   color: white;
-  padding: 15px 10px;
+  padding: 6px 8px;
   text-align: center;
   font-weight: 600;
   font-size: 14px;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.timetable-table th:first-child {
+.timetable-table th:first-child,
+.day-header {
   background: linear-gradient(135deg, rgb(28, 137, 177), rgb(20, 100, 130));
   font-weight: 700;
   font-size: 16px;
-}
-
-.day-header {
-  background: linear-gradient(135deg, rgb(28, 137, 177), rgb(20, 100, 130)) !important;
-  color: white !important;
-  font-weight: 700 !important;
-  font-size: 16px !important;
-  padding: 15px 10px !important;
-  text-align: center !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  padding: 6px 8px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
 }
 
 .timetable-table td {
-  padding: 8px;
+  padding: 4px;
   text-align: center;
   border: 1px solid #e9ecef;
   vertical-align: middle;
-  min-height: 60px;
+  /* min-height: 40px; */
   position: relative;
+  /* color:#c0392b; */
 }
 
 /* Timetable Cells */
 .timetable-cell {
-  height: 60px;
+  height: 30px;
   transition: all 0.3s ease;
   border-radius: 8px;
   position: relative;
+  color: #c0392b;
 }
 
 .timetable-cell:hover {
@@ -191,7 +308,6 @@
   align-items: center;
   padding: 5px;
   border-radius: 6px;
-  position: relative;
   transition: all 0.3s ease;
 }
 
@@ -282,131 +398,75 @@
 }
 
 .class-details p {
-  margin: 8px 0;
-  font-size: 14px;
-  color: #2d3436;
-}
+  margin: 8px 0}
 
-.class-details strong {
-  color: rgb(16, 161, 165);
-}
 
-.swap-arrow {
-  font-size: 32px;
-  color: rgb(40, 169, 220);
-  font-weight: bold;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-.swap-actions {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  flex-wrap: wrap;
-}
-
-/* Buttons */
-.btn {
-  padding: 12px 24px;
-  border: none;
+ .skeleton-container {
+    width: 80vw;
+  margin: 2rem auto;
+  padding: 1rem;
+  background-color: #ffffff;
   border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, rgb(40, 169, 220), rgb(28, 137, 177));
-  color: white;
-  box-shadow: 0 4px 15px rgba(40, 169, 220, 0.3);
+.skeleton-header {
+  height: 40px;
+  width: 40%;
+  margin-bottom: 1.5rem;
+  background-color: #09b6bc;
+  border-radius: 4px;
 }
 
-.btn-primary:hover {
-  background: white;
-  color: rgb(40, 169, 220);
-  border: 2px solid rgb(40, 169, 220);
-  box-shadow: 0 6px 20px rgba(40, 169, 220, 0.4);
-  transform: translateY(-2px);
+.skeleton-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.btn-secondary {
-  background: white;
-  color: rgb(40, 169, 220);
-  border: 2px solid rgb(40, 169, 220);
+.skeleton-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
-.btn-secondary:hover {
-  background: rgb(40, 169, 220);
-  color: white;
-  box-shadow: 0 4px 15px rgba(40, 169, 220, 0.4);
-  transform: translateY(-2px);
+.skeleton-day {
+  width: 100px;
+  height: 60px;
+  background-color: #077492;
+  border-radius: 4px;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .timetable-container {
-    padding: 15px;
-  }
-  
-  .dropdowns-container {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .dropdown-group {
-    width: 100%;
-    max-width: 250px;
-  }
-  
-  .selected-classes {
-    flex-direction: column;
-  }
-  
-  .swap-arrow {
-    transform: rotate(90deg);
-  }
-  
-  .timetable-table th,
-  .timetable-table td {
-    padding: 8px 4px;
-    font-size: 12px;
-  }
-  
-  .subject {
-    font-size: 10px;
-  }
+.skeleton-cell {
+  flex: 1;
+  height: 60px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
 }
 
-@media (max-width: 480px) {
-  .section-header h3 {
-    font-size: 20px;
+/* Shimmer effect */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150px;
+  height: 100%;
+  width: 150px;
+  background: linear-gradient(to right, transparent 0%, #f1f5f9 50%, transparent 100%);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -150px;
   }
-  
-  .class-selection-section h3 {
-    font-size: 20px;
-  }
-  
-  .timetable-table th,
-  .timetable-table td {
-    padding: 6px 2px;
-    font-size: 10px;
-  }
-  
-  .subject {
-    font-size: 9px;
-  }
-  
-  .lab-badge {
-    font-size: 8px;
-    padding: 1px 4px;
+  100% {
+    left: 100%;
   }
 }
+ 

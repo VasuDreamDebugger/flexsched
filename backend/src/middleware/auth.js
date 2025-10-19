@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import Faculty from "../Models/Faculty.js";
+import Admin from "../Models/Admin.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -18,26 +19,46 @@ export const authenticateToken = async (req, res, next) => {
 
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Find faculty by ID and exclude password
-    const faculty = await Faculty.findById(decoded.facultyId).select(
-      "-password"
-    );
+    // Try to resolve token to a Faculty first, then to an Admin
+    let faculty = null;
+    let admin = null;
+
+    try {
+      faculty = await Faculty.findById(decoded.facultyId).select("-password");
+    } catch (e) {
+      faculty = null;
+    }
 
     if (!faculty) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid token - faculty not found",
-      });
+      // Try admin lookup
+      try {
+        admin = await Admin.findById(decoded.facultyId).select("-password");
+      } catch (e) {
+        admin = null;
+      }
     }
 
-    if (!faculty.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: "Account is deactivated",
-      });
+    if (!faculty && !admin) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid token - user not found" });
     }
 
-    req.faculty = faculty;
+    if (faculty && !faculty.isActive) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Account is deactivated" });
+    }
+
+    if (admin && !admin.isActive) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Admin account is deactivated" });
+    }
+
+    // Attach whichever was found to request
+    if (faculty) req.faculty = faculty;
+    if (admin) req.admin = admin;
     next();
   } catch (error) {
     if (error.name === "JsonWebTokenError") {
@@ -63,18 +84,25 @@ export const authenticateToken = async (req, res, next) => {
 // Middleware to check if faculty has specific permissions
 export const requireRole = (roles) => {
   return (req, res, next) => {
-    if (!req.faculty) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
+    // Allow either authenticated faculty or admin
+    if (!req.faculty && !req.admin) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Authentication required" });
     }
 
-    if (roles && !roles.includes(req.faculty.designation)) {
-      return res.status(403).json({
-        success: false,
-        message: "Insufficient permissions",
-      });
+    // If roles are specified, check faculty designation or admin role
+    if (roles) {
+      if (req.faculty && !roles.includes(req.faculty.designation)) {
+        return res
+          .status(403)
+          .json({ success: false, message: "Insufficient permissions" });
+      }
+      if (req.admin && !roles.includes(req.admin.role)) {
+        return res
+          .status(403)
+          .json({ success: false, message: "Insufficient permissions" });
+      }
     }
 
     next();

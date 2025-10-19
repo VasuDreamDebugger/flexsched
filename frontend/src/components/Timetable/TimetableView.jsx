@@ -1,12 +1,75 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import "./TimetableView.css";
+import "./skeleton.css";
 
 const API_BASE_URL = "http://localhost:3000/api";
 
+const days = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+const periods = [1, 2, 3, 4, 5, 6];
+
+const LoaderTable = () => {
+  return (
+    <div className="skeleton-timetable">
+      <div className="version-toggle skeleton">
+        <div className="skeleton-button shimmer"></div>
+        <div className="skeleton-button shimmer"></div>
+      </div>
+      <table className="timetable-table">
+        <thead>
+          <tr>
+            <th>
+              <div
+                className="skeleton shimmer"
+                style={{ height: "24px" }}
+              ></div>
+            </th>
+            {periods.map((period) => (
+              <th key={period}>
+                <div
+                  className="skeleton shimmer"
+                  style={{ height: "24px" }}
+                ></div>
+                <div className="skeleton-time shimmer"></div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {days.map((day) => (
+            <tr key={day}>
+              <td>
+                <div
+                  className="skeleton shimmer"
+                  style={{ height: "24px" }}
+                ></div>
+              </td>
+              {periods.map((period) => (
+                <td key={`${day}-${period}`} className="skeleton-cell">
+                  <div className="skeleton-content shimmer"></div>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 const TimetableView = ({ faculty, onSwapRequest }) => {
   const [facultyTimetable, setFacultyTimetable] = useState(null);
-  const [timetableVariant, setTimetableVariant] = useState("updated"); // 'current' | 'default'
+  const [defaultFacultyTimetable, setDefaultFacultyTimetable] = useState(null);
+  const [timetableVariant, setTimetableVariant] = useState("updated"); // 'updated' | 'default' for faculty
+  const [classTimetableVariant, setClassTimetableVariant] = useState("updated"); // 'updated' | 'default' for class
   const [availableClasses, setAvailableClasses] = useState({});
   const [selectedClass, setSelectedClass] = useState({
     year: "",
@@ -14,19 +77,11 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
     section: "",
   });
   const [classTimetable, setClassTimetable] = useState(null);
+  const [defaultClassTimetable, setDefaultClassTimetable] = useState(null);
   const [selectedPeriods, setSelectedPeriods] = useState([]);
   const [loadingFaculty, setLoadingFaculty] = useState(false);
   const [loadingClass, setLoadingClass] = useState(false);
 
-  const days = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
-  const periods = [1, 2, 3, 4, 5, 6];
   const periodTimings = {
     1: { start: "09:00", end: "10:00" },
     2: { start: "10:00", end: "11:00" },
@@ -48,27 +103,40 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
       });
 
       const data = response.data?.data || null;
-      // data may be a versioned FacultyTimetable (with versions/currentVersionLabel) or a legacy timetable
       if (!data) {
         setFacultyTimetable(null);
+        setDefaultFacultyTimetable(null);
         return;
       }
 
-      // If the response includes versions, pick the appropriate version
+      // If the response includes versions, store both default and updated versions
       if (data.versions && Array.isArray(data.versions)) {
-        const label =
-          timetableVariant === "default"
-            ? "default"
-            : data.currentVersionLabel || "updated" || "default";
-        const version = data.versions.find((v) => v.label === label) ||
-          data.versions[0] || { timeSlots: [] };
+        const defaultVersion =
+          data.versions.find((v) => v.label === "default") || data.versions[0];
+        const updatedVersion =
+          data.versions.find(
+            (v) => v.label === data.currentVersionLabel || "updated"
+          ) || defaultVersion;
+
+        setDefaultFacultyTimetable({
+          ...data,
+          timeSlots: defaultVersion.timeSlots || [],
+          versionLabel: "default",
+        });
+
         setFacultyTimetable({
           ...data,
-          timeSlots: version.timeSlots || [],
-          versionLabel: label,
+          timeSlots: updatedVersion.timeSlots || [],
+          versionLabel: "updated",
         });
       } else if (data.version && data.version.timeSlots) {
         // alternate shape returned by controller (version + versionLabel)
+        setDefaultFacultyTimetable({
+          ...data,
+          timeSlots:
+            data.defaultVersion?.timeSlots || data.version.timeSlots || [],
+          versionLabel: "default",
+        });
         setFacultyTimetable({
           ...data,
           timeSlots: data.version.timeSlots || [],
@@ -76,7 +144,9 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
         });
       } else {
         // legacy single-document timetable
-        setFacultyTimetable({ ...data, timeSlots: data.timeSlots || [] });
+        const timetableData = { ...data, timeSlots: data.timeSlots || [] };
+        setDefaultFacultyTimetable(timetableData);
+        setFacultyTimetable(timetableData);
       }
     } catch (error) {
       console.error("Error fetching faculty timetable:", error);
@@ -111,6 +181,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
       !selectedClass.section
     ) {
       setClassTimetable(null);
+      setDefaultClassTimetable(null);
       return;
     }
 
@@ -130,37 +201,38 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
       const data = response.data?.data;
       if (!data) {
         setClassTimetable(null);
+        setDefaultClassTimetable(null);
         return;
       }
-      console.log("Fetched class timetable data:", data);
-
-      // Choose version based on timetableVariant. In v2 model, 'updated' is the current working version.
-      const chosenVersion =
-        timetableVariant === "default" ? data.default : data.updated;
-
-      // Normalize slots: ensure timeSlots array exists and attach classTimetableId so UI + swap logic can use it
-      const normalized = {
-        ...chosenVersion,
-        timeSlots: (chosenVersion.timeSlots || []).map((s) => ({
+      // Normalize both default and updated versions
+      const normalizeVersion = (version) => ({
+        ...version,
+        timeSlots: (version.timeSlots || []).map((s) => ({
           ...s,
-          // attach class timetable id from meta for downstream requests
-          // ensure we always attach a string id (avoid passing a raw object)
           classTimetableId:
             (data.meta && data.meta._id && String(data.meta._id)) ||
             (data.meta && data.meta.id && String(data.meta.id)) ||
             null,
         })),
         meta: data.meta,
-      };
+      });
 
-      setClassTimetable(normalized);
+      // Store both versions
+      const defaultNormalized = normalizeVersion(data.default || {});
+      const updatedNormalized = normalizeVersion(
+        data.updated || data.default || {}
+      );
+
+      setDefaultClassTimetable(defaultNormalized);
+      setClassTimetable(updatedNormalized);
     } catch (error) {
       console.error("Error fetching class timetable:", error);
       setClassTimetable(null);
+      setDefaultClassTimetable(null);
     } finally {
       setLoadingClass(false);
     }
-  }, [selectedClass, timetableVariant]);
+  }, [selectedClass]);
 
   // Initial and variant-aware fetches
   useEffect(() => {
@@ -168,10 +240,10 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
     fetchAvailableClasses();
   }, [fetchFacultyTimetable, fetchAvailableClasses]);
 
-  // When selected class changes OR timetableVariant changes, reload class timetable
+  // When selected class or classTimetableVariant changes, reload class timetable
   useEffect(() => {
     fetchClassTimetable();
-  }, [fetchClassTimetable]);
+  }, [fetchClassTimetable, classTimetableVariant]);
 
   // Helper: check if a given slot object belongs to the current faculty
   // Supports both legacy slot.faculty (string) and v2 slot.facultyId populated object
@@ -250,140 +322,131 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
     return classes;
   };
 
-  const renderTimetable = (timetable, isFacultyTimetable = false) => {
-    if (!timetable) return null;
+  const isChangedSlot = (slot, defaultTimetable, variant) => {
+    if (!slot || !defaultTimetable || variant === "default") return false;
 
+    const defaultSlot = defaultTimetable.timeSlots?.find(
+      (ts) =>
+        ts.day === slot.day &&
+        (ts.periods?.includes
+          ? ts.periods?.includes(slot.period)
+          : ts.period === slot.period || ts.periods === slot.period)
+    );
+
+    if (!defaultSlot) return true;
     return (
-      <table className="timetable-table">
-        <thead>
-          <tr>
-            <th>Day</th>
-            {periods.map((period) => (
-              <th key={period}>
-                P{period}
-                <br />
-                <small>
-                  {periodTimings[period].start} - {periodTimings[period].end}
-                </small>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {days.map((day) => (
-            <tr key={day}>
-              <td className="day-header">{day}</td>
-              {periods.map((period) => {
-                const slot = timetable.timeSlots?.find(
-                  (ts) =>
-                    ts.day === day &&
-                    (ts.periods?.includes
-                      ? ts.periods?.includes(period)
-                      : ts.period === period || ts.periods === period)
-                );
-
-                return (
-                  <td
-                    key={`${day}-${period}`}
-                    className={getCellClass(
-                      day,
-                      period,
-                      slot,
-                      isFacultyTimetable
-                    )}
-                    onClick={() => handlePeriodClick(day, period, slot)}
-                    style={{ cursor: slot ? "pointer" : "default" }}
-                    title={
-                      slot
-                        ? `Faculty: ${
-                            slot.faculty || slot.facultyId?.name || "-"
-                          }\nRoom: ${slot.room || "-"}\nTime: ${
-                            periodTimings[period].start
-                          } - ${periodTimings[period].end}`
-                        : undefined
-                    }
-                  >
-                    {slot ? (
-                      <div className={`class-slot ${slot.isLab ? "lab" : ""}`}>
-                        <div className="subject">{slot.subject}</div>
-                        {slot.isLab && <div className="lab-badge">Lab</div>}
-                      </div>
-                    ) : (
-                      <div className="empty-slot">-</div>
-                    )}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      defaultSlot.faculty !== slot.faculty ||
+      defaultSlot.facultyId?.name !== slot.facultyId?.name
     );
   };
 
-  const renderClassTimetable = () => {
-    if (!classTimetable) return null;
+  // Renders timetable with independent variant toggles for faculty/class
+  const renderTimetable = (
+    timetable,
+    isFacultyTimetable = false,
+    defaultTimetable = null,
+    variant = "updated"
+  ) => {
+    if (!timetable) return null;
 
     return (
-      <table className="timetable-table">
-        <thead>
-          <tr>
-            <th>Day</th>
-            {periods.map((period) => (
-              <th key={period}>
-                P{period}
-                <br />
-                <small>
-                  {periodTimings[period].start} - {periodTimings[period].end}
-                </small>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {days.map((day) => (
-            <tr key={day}>
-              <td className="day-header">{day}</td>
-              {periods.map((period) => {
-                const slot = classTimetable.timeSlots?.find(
-                  (s) =>
-                    s.day === day &&
-                    (s.periods?.includes
-                      ? s.periods?.includes(period)
-                      : s.period === period || s.periods === period)
-                );
-
-                return (
-                  <td
-                    key={`${day}-${period}`}
-                    className={getCellClass(day, period, slot)}
-                    onClick={() => handlePeriodClick(day, period, slot)}
-                    style={{ cursor: slot ? "pointer" : "default" }}
-                    title={
-                      slot
-                        ? `Faculty: ${
-                            slot.faculty || slot.facultyId?.name || "-"
-                          }\nRoom: ${slot.room || "-"}\nTime: ${
-                            periodTimings[period].start
-                          } - ${periodTimings[period].end}`
-                        : undefined
-                    }
-                  >
-                    {slot ? (
-                      <div className={`class-slot ${slot.isLab ? "lab" : ""}`}>
-                        <div className="subject">{slot.subject}</div>
-                        {slot.isLab && <div className="lab-badge">Lab</div>}
-                      </div>
-                    ) : (
-                      <div className="empty-slot">-</div>
-                    )}
-                  </td>
-                );
-              })}
+      <div className="timetable-section">
+        <div className="version-toggle">
+          <button
+            className={variant === "default" ? "active" : ""}
+            onClick={() =>
+              isFacultyTimetable
+                ? setTimetableVariant("default")
+                : setClassTimetableVariant("default")
+            }
+          >
+            Default
+          </button>
+          <button
+            className={variant === "updated" ? "active" : ""}
+            onClick={() =>
+              isFacultyTimetable
+                ? setTimetableVariant("updated")
+                : setClassTimetableVariant("updated")
+            }
+          >
+            Updated
+          </button>
+        </div>
+        <table className="timetable-table">
+          <thead>
+            <tr>
+              <th>Day</th>
+              {periods.map((period) => (
+                <th key={period}>
+                  P{period}
+                  <br />
+                  <small>
+                    {periodTimings[period].start} - {periodTimings[period].end}
+                  </small>
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {days.map((day) => (
+              <tr key={day}>
+                <td className="day-header">{day}</td>
+                {periods.map((period) => {
+                  const slot = timetable.timeSlots?.find(
+                    (ts) =>
+                      ts.day === day &&
+                      (ts.periods?.includes
+                        ? ts.periods?.includes(period)
+                        : ts.period === period || ts.periods === period)
+                  );
+
+                  const isChanged = isChangedSlot(
+                    slot,
+                    defaultTimetable,
+                    variant
+                  );
+                  const cellClasses = `${getCellClass(
+                    day,
+                    period,
+                    slot,
+                    isFacultyTimetable
+                  )} ${isChanged ? "changed-class" : ""}`;
+
+                  return (
+                    <td
+                      key={`${day}-${period}`}
+                      className={cellClasses}
+                      onClick={() => handlePeriodClick(day, period, slot)}
+                      style={{ cursor: slot ? "pointer" : "default" }}
+                      title={
+                        slot
+                          ? `Faculty: ${
+                              slot.faculty || slot.facultyId?.name || "-"
+                            }\nRoom: ${slot.room || "-"}\nTime: ${
+                              periodTimings[period].start
+                            } - ${periodTimings[period].end}`
+                          : undefined
+                      }
+                    >
+                      {slot ? (
+                        <div
+                          className={`class-slot ${slot.isLab ? "lab" : ""}`}
+                        >
+                          <div className="subject">{slot.subject}</div>
+                          {slot.isLab && <div className="lab-badge">Lab</div>}
+                        </div>
+                      ) : (
+                        <div className="empty-slot">-</div>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   };
 
@@ -437,28 +500,18 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
       <div className="timetable-section">
         <div className="section-header">
           <h3>Your Timetable</h3>
-          <div className="variant-toggle">
-            <button
-              className={`btn ${
-                timetableVariant === "default" ? "btn-primary" : "btn-secondary"
-              }`}
-              onClick={() => setTimetableVariant("default")}
-            >
-              Default
-            </button>
-            <button
-              className={`btn mx-2 ${
-                timetableVariant === "updated" ? "btn-primary" : "btn-secondary"
-              }`}
-              onClick={() => setTimetableVariant("updated")}
-            >
-              Current
-            </button>
-          </div>
         </div>
         <div className="table-wrapper">
-          {loadingFaculty && <div className="loader">Loading...</div>}
-          {!loadingFaculty && renderTimetable(facultyTimetable, true)}
+          {loadingFaculty && <LoaderTable />}
+          {!loadingFaculty &&
+            renderTimetable(
+              timetableVariant === "default"
+                ? defaultFacultyTimetable
+                : facultyTimetable,
+              true,
+              defaultFacultyTimetable,
+              timetableVariant
+            )}
         </div>
       </div>
 
@@ -544,32 +597,18 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
               Click on your class first, then click on another faculty's class
               to request a swap
             </p>
-            <div className="variant-toggle">
-              <button
-                className={`btn ${
-                  timetableVariant === "default"
-                    ? "btn-primary"
-                    : "btn-secondary"
-                }`}
-                onClick={() => setTimetableVariant("default")}
-              >
-                Default
-              </button>
-              <button
-                className={`btn mx-2 ${
-                  timetableVariant === "updated"
-                    ? "btn-primary"
-                    : "btn-secondary"
-                }`}
-                onClick={() => setTimetableVariant("updated")}
-              >
-                Current
-              </button>
-            </div>
           </div>
           <div className="table-wrapper">
-            {loadingClass && <div className="loader">Loading...</div>}
-            {!loadingClass && renderClassTimetable()}
+            {loadingClass && <LoaderTable />}
+            {!loadingClass &&
+              renderTimetable(
+                classTimetableVariant === "default"
+                  ? defaultClassTimetable
+                  : classTimetable,
+                false,
+                defaultClassTimetable,
+                classTimetableVariant
+              )}
           </div>
         </div>
       )}
