@@ -15,13 +15,28 @@ const classSlotSchema = new mongoose.Schema(
       ],
     },
     period: { type: Number, required: true, min: 1, max: 6 },
-    subject: { type: String, required: true, trim: true },
-    room: { type: String, required: true, trim: true },
+    subject: {
+      type: String,
+      required: false,
+      trim: true,
+      default: "LEISURE", // Use LEISURE as default for free slots
+    },
+    room: {
+      type: String,
+      required: false,
+      trim: true,
+      default: "LEISURE", // Use LEISURE as default for free slots
+    },
     facultyId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Faculty",
       required: false,
       default: null,
+    },
+    isFree: {
+      type: Boolean,
+      default: true, // Default to true, set to false when assigned
+      required: false,
     },
     isLab: { type: Boolean, default: false },
     isTheory: { type: Boolean, default: true },

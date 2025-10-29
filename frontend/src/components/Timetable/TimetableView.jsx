@@ -1,9 +1,14 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import "./TimetableView.css";
 import "./skeleton.css";
+import SmartRecommendModal from "../SmartRecommend/SmartRecommendModal";
 
 const API_BASE_URL = "http://localhost:3000/api";
+
+// Time periods mapping for morning/afternoon sections
+const MORNING_PERIODS = [1, 2, 3];
+const AFTERNOON_PERIODS = [4, 5, 6];
 
 const days = [
   "Monday",
@@ -79,8 +84,27 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
   const [classTimetable, setClassTimetable] = useState(null);
   const [defaultClassTimetable, setDefaultClassTimetable] = useState(null);
   const [selectedPeriods, setSelectedPeriods] = useState([]);
+  const classHeadingRef = useRef(null);
+  const timetableContainerRef = useRef(null);
+  // Scroll timetable heading into view when class selection changes
+  useEffect(() => {
+    if (
+      selectedClass.year &&
+      selectedClass.branch &&
+      selectedClass.section &&
+      classHeadingRef.current
+    ) {
+      const headerOffset = 64; // Adjust this value to match your header height
+      const top =
+        classHeadingRef.current.getBoundingClientRect().top +
+        window.pageYOffset -
+        headerOffset;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  }, [selectedClass.year, selectedClass.branch, selectedClass.section]);
   const [loadingFaculty, setLoadingFaculty] = useState(false);
   const [loadingClass, setLoadingClass] = useState(false);
+  const [showSmartRecommend, setShowSmartRecommend] = useState(false);
 
   const periodTimings = {
     1: { start: "09:00", end: "10:00" },
@@ -89,6 +113,78 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
     4: { start: "13:00", end: "14:00" },
     5: { start: "14:00", end: "15:00" },
     6: { start: "15:00", end: "16:00" },
+  };
+
+  // Smart Recommend handlers
+  const handleSmartRecommend = async (day, section) => {
+    try {
+      if (!classTimetable?._id) {
+        throw new Error("Please select a class first");
+      }
+      // Get token from faculty prop or localStorage fallback
+      const token = faculty?.token || localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Authentication token missing. Please log in again.");
+      }
+      const response = await axios.post(
+        `${API_BASE_URL}/smart-recommend/recommendations`,
+        {
+          day,
+          section,
+          academicYear: faculty?.academicYear,
+          semester: faculty?.semester,
+          classId: classTimetable._id,
+          facultyId: faculty?._id || faculty?.id || null,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+      return response.data.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || error.message);
+    }
+  };
+
+  const handleSmartRecommendAssign = async ({ slots }) => {
+    try {
+      if (!classTimetable?._id) {
+        throw new Error("Please select a class first");
+      }
+      // Get token from faculty prop or localStorage fallback
+      const token = faculty?.token || localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Authentication token missing. Please log in again.");
+      }
+      const response = await axios.post(
+        `${API_BASE_URL}/smart-recommend/assign`,
+        {
+          slots,
+          academicYear: faculty?.academicYear,
+          semester: faculty?.semester,
+          classId: classTimetable._id,
+          facultyId: faculty?._id || faculty?.id || null,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+      // Refresh the timetable data
+      await fetchClassTimetable(selectedClass);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || error.message);
+    }
   };
 
   // Function to generate a consistent color for a subject
@@ -233,15 +329,15 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
         setDefaultClassTimetable(null);
         return;
       }
-      // Normalize both default and updated versions
+      // Always ensure _id is present in normalized timetable
+      const timetableId =
+        data.meta?._id || data.meta?.id || data._id || data.id || null;
       const normalizeVersion = (version) => ({
         ...version,
+        _id: timetableId,
         timeSlots: (version.timeSlots || []).map((s) => ({
           ...s,
-          classTimetableId:
-            (data.meta && data.meta._id && String(data.meta._id)) ||
-            (data.meta && data.meta.id && String(data.meta.id)) ||
-            null,
+          classTimetableId: timetableId,
         })),
         meta: data.meta,
       });
@@ -254,6 +350,8 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
 
       setDefaultClassTimetable(defaultNormalized);
       setClassTimetable(updatedNormalized);
+      // Debug log
+      console.log("[DEBUG] setClassTimetable:", updatedNormalized);
     } catch (error) {
       console.error("Error fetching class timetable:", error);
       setClassTimetable(null);
@@ -468,7 +566,9 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
                             borderRadius: "8px",
                           }}
                         >
-                          <div className="subject">{slot.subject}</div>
+                          <div className="subject">
+                            {slot.subject === "LEISURE" ? " - " : slot.subject}
+                          </div>
                           {slot.isLab && <div className="lab-badge">Lab</div>}
                         </div>
                       ) : (
@@ -531,7 +631,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
   };
 
   return (
-    <div className="timetable-container">
+    <div className="timetable-container" ref={timetableContainerRef}>
       {/* Faculty Timetable */}
       <div className="timetable-section">
         <div className="section-header">
@@ -624,15 +724,88 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
       {/* Class Timetable */}
       {selectedClass.year && selectedClass.branch && selectedClass.section && (
         <div className="timetable-section">
-          <div className="section-header">
+          <div className="section-header" ref={classHeadingRef}>
             <h3>
               {selectedClass.branch} {selectedClass.year} - Section{" "}
               {selectedClass.section} Timetable
             </h3>
-            <p className="instruction-text">
-              Click on your class first, then click on another faculty's class
-              to request a swap
-            </p>
+            <div className="timetable-actions">
+              {/* Detailed debug logs for required data */}
+              {(() => {
+                try {
+                  console.log(
+                    "[DEBUG] faculty keys:",
+                    faculty ? Object.keys(faculty) : null
+                  );
+                  console.log(
+                    "[DEBUG] faculty.timetableId:",
+                    faculty?.timetableId
+                  );
+                } catch (e) {
+                  console.log("[DEBUG] faculty log error", e);
+                }
+                try {
+                  console.log("[DEBUG] classTimetable (raw):", classTimetable);
+                  console.log(
+                    "[DEBUG] classTimetable typeof:",
+                    typeof classTimetable
+                  );
+                  console.log(
+                    "[DEBUG] classTimetable._id:",
+                    classTimetable?._id || classTimetable?.id || null
+                  );
+                  console.log(
+                    "[DEBUG] classTimetable.timeSlots exists:",
+                    Array.isArray(classTimetable?.timeSlots)
+                  );
+                } catch (e) {
+                  console.log("[DEBUG] classTimetable log error", e);
+                }
+                return null;
+              })()}
+              <button
+                className="smart-recommend-btn"
+                onClick={() => {
+                  const missing = [];
+                  if (!selectedClass.year) missing.push("year");
+                  if (!selectedClass.branch) missing.push("branch");
+                  if (!selectedClass.section) missing.push("section");
+                  if (!classTimetable) missing.push("classTimetable");
+                  if (
+                    classTimetable &&
+                    !(classTimetable._id || classTimetable.id)
+                  )
+                    missing.push("classTimetable._id");
+                  if (missing.length === 0) {
+                    setShowSmartRecommend(true);
+                  } else {
+                    alert(
+                      "Missing: " +
+                        missing.join(", ") +
+                        ". Please reselect class."
+                    );
+                    console.warn(
+                      "[DEBUG] Missing fields for Smart Recommend:",
+                      missing,
+                      { selectedClass, classTimetable, faculty }
+                    );
+                  }
+                }}
+                disabled={
+                  !selectedClass.year ||
+                  !selectedClass.branch ||
+                  !selectedClass.section ||
+                  !classTimetable ||
+                  !classTimetable._id
+                }
+              >
+                Smart Recommend
+              </button>
+              <p className="instruction-text">
+                Click on your class first, then click on another faculty's class
+                to request a swap
+              </p>
+            </div>
           </div>
           <div className="table-wrapper">
             {loadingClass && <LoaderTable />}
@@ -648,6 +821,34 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
           </div>
         </div>
       )}
+
+      {/* Smart Recommend Modal */}
+      <SmartRecommendModal
+        isOpen={showSmartRecommend}
+        onClose={() => setShowSmartRecommend(false)}
+        onSubmit={async ({ day, section, slots }) => {
+          // If slots are present, it's an assign request
+          if (slots) {
+            return handleSmartRecommendAssign({ slots });
+          }
+          // Otherwise, day and section are provided by modal, rest is filled here
+          if (!day || !section) {
+            throw new Error("Please select both day and section.");
+          }
+          // Defensive: ensure required data is present.
+          // faculty.academicYear/semester may be stored under faculty.timetableId in this app,
+          // so require a faculty identifier and the class timetable id instead.
+          if (!classTimetable?._id || !(faculty?._id || faculty?.id)) {
+            throw new Error(
+              "Missing timetable or faculty details. Please reselect class."
+            );
+          }
+          return handleSmartRecommend(day, section);
+        }}
+        days={days}
+        selectedClass={selectedClass}
+        faculty={faculty}
+      />
 
       {/* Swap Request Button */}
       {selectedPeriods.length === 2 && (

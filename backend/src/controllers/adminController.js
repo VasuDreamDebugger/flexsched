@@ -251,13 +251,11 @@ export const createFacultyTimetable = async (req, res) => {
         const section = slot.section || "A";
 
         if (!day || !subject || !branch || !room) {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              message:
-                "Each time slot must include day, subject, branch and room",
-            });
+          return res.status(400).json({
+            success: false,
+            message:
+              "Each time slot must include day, subject, branch and room",
+          });
         }
 
         // If the slot has `periods` (array), convert each period to its own entry
@@ -348,11 +346,20 @@ export const createClassTimetable = async (req, res) => {
       });
     }
 
+    // Process slots to add isFree flag
+    const processedSlots = timeSlots.map((slot) => ({
+      ...slot,
+      subject: slot.subject || "LEISURE",
+      room: slot.room || "LEISURE",
+      facultyId: slot.facultyId || null,
+      isFree: slot.isFree || (!slot.subject && !slot.facultyId) || false,
+    }));
+
     const timetable = new Timetable({
       facultyId,
       semester,
       academicYear,
-      timeSlots,
+      timeSlots: processedSlots,
     });
 
     await timetable.save();

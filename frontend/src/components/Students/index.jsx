@@ -154,7 +154,6 @@ const Students = () => {
     if (!timetable) return null;
     return (
       <div className="timetable-section">
-        <h1>vasu</h1>
         <div className="version-toggle">
           <button
             className={variant === "default" ? "active" : ""}
@@ -219,10 +218,15 @@ const Students = () => {
                     >
                       {slot ? (
                         <div
-                          className={`class-slot${slot.isLab ? " lab" : ""}`}
+                          className={`class-slot${slot.isLab ? " lab" : ""}${
+                            slot.isFree ? " - " : ""
+                          }`}
                         >
-                          <div className="subject">{slot.subject}</div>
+                          <div className="subject">
+                            {slot.isFree ? "LEISURE" : slot.subject}
+                          </div>
                           {slot.isLab && <div className="lab-badge">Lab</div>}
+                          {slot.isFree && <div className="leisure-badge"></div>}
                         </div>
                       ) : (
                         <div className="empty-slot">-</div>

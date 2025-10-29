@@ -89,26 +89,47 @@ const timeSlotSchema = new mongoose.Schema({
   },
 });
 
+const versionSchema = new mongoose.Schema(
+  {
+    label: {
+      type: String,
+      enum: ["default", "current", "draft", "updated"],
+      required: true,
+    },
+    timeSlots: { type: [timeSlotSchema], default: [] },
+    updatedAt: { type: Date, default: Date.now },
+    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Faculty" },
+    note: { type: String, required: false },
+    timestamp: { type: Date, required: false },
+  },
+  { _id: false }
+);
+
 const timetableSchema = new mongoose.Schema(
   {
     facultyId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Faculty",
       required: true,
+      index: true,
     },
     semester: {
       type: String,
       required: true,
       trim: true,
+      index: true,
     },
     academicYear: {
       type: String,
       required: true,
       trim: true,
+      index: true,
     },
-    timeSlots: [timeSlotSchema],
-    // default snapshot used for comparison/display
-    defaultTimeSlots: [timeSlotSchema],
+    versions: {
+      type: [versionSchema],
+      default: [{ label: "default", timeSlots: [], updatedAt: new Date() }],
+    },
+    currentVersionLabel: { type: String, default: "default" },
     isClassTimetable: {
       type: Boolean,
       default: false,
@@ -131,14 +152,6 @@ const timetableSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
-    },
   },
   {
     timestamps: true,
@@ -149,7 +162,14 @@ const timetableSchema = new mongoose.Schema(
 
 // Virtual to get total periods per week
 timetableSchema.virtual("totalPeriodsPerWeek").get(function () {
-  return this.timeSlots.reduce((total, slot) => total + slot.periods.length, 0);
+  const ver = (this.versions || []).find(
+    (v) => v.label === this.currentVersionLabel
+  ) ||
+    (this.versions || [])[0] || { timeSlots: [] };
+  return (ver.timeSlots || []).reduce(
+    (total, slot) => total + (slot.periods ? slot.periods.length : 1),
+    0
+  );
 });
 
 // Virtual to get total hours per week (assuming each period is 1 hour)
@@ -159,24 +179,40 @@ timetableSchema.virtual("totalHoursPerWeek").get(function () {
 
 // Virtual to get subjects taught
 timetableSchema.virtual("subjects").get(function () {
-  return [...new Set(this.timeSlots.map((slot) => slot.subject))];
+  const ver = (this.versions || []).find(
+    (v) => v.label === this.currentVersionLabel
+  ) ||
+    (this.versions || [])[0] || { timeSlots: [] };
+  return [...new Set((ver.timeSlots || []).map((slot) => slot.subject))];
 });
 
 // Virtual to get branches taught
 timetableSchema.virtual("branches").get(function () {
-  return [...new Set(this.timeSlots.map((slot) => slot.branch))];
+  const ver = (this.versions || []).find(
+    (v) => v.label === this.currentVersionLabel
+  ) ||
+    (this.versions || [])[0] || { timeSlots: [] };
+  return [...new Set((ver.timeSlots || []).map((slot) => slot.branch))];
 });
 
 // Index for better query performance
 timetableSchema.index({ facultyId: 1 });
 timetableSchema.index({ semester: 1 });
 timetableSchema.index({ academicYear: 1 });
-timetableSchema.index({ "timeSlots.day": 1, "timeSlots.periods": 1 });
+timetableSchema.index({
+  "versions.timeSlots.day": 1,
+  "versions.timeSlots.periods": 1,
+});
 
 // Pre-save middleware to validate time slots
 timetableSchema.pre("save", function (next) {
   // Validate periods are in ascending order and no duplicates
-  for (let slot of this.timeSlots) {
+  // Validate periods inside the currently active version (or default first version)
+  const ver = (this.versions || []).find(
+    (v) => v.label === this.currentVersionLabel
+  ) ||
+    (this.versions || [])[0] || { timeSlots: [] };
+  for (let slot of ver.timeSlots) {
     // Check for duplicate periods
     const uniquePeriods = [...new Set(slot.periods)];
     if (uniquePeriods.length !== slot.periods.length) {
@@ -205,7 +241,11 @@ timetableSchema.pre("save", function (next) {
 
 // Instance method to get timetable for specific day
 timetableSchema.methods.getDaySchedule = function (day) {
-  return this.timeSlots.filter((slot) => slot.day === day);
+  const ver = (this.versions || []).find(
+    (v) => v.label === this.currentVersionLabel
+  ) ||
+    (this.versions || [])[0] || { timeSlots: [] };
+  return (ver.timeSlots || []).filter((slot) => slot.day === day);
 };
 
 // Instance method to check for period conflicts
@@ -215,7 +255,7 @@ timetableSchema.methods.hasPeriodConflict = function (newSlot) {
   for (let existingSlot of daySlots) {
     // Check if any periods overlap
     const hasOverlap = newSlot.periods.some((newPeriod) =>
-      existingSlot.periods.includes(newPeriod)
+      (existingSlot.periods || []).includes(newPeriod)
     );
 
     if (hasOverlap) {
@@ -272,7 +312,7 @@ timetableSchema.statics.getDefaultPeriodTimings = function () {
 // Static method to find timetables by period
 timetableSchema.statics.findByPeriod = function (period) {
   return this.find({
-    "timeSlots.periods": period,
+    "versions.timeSlots.periods": period,
     isActive: true,
   });
 };

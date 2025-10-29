@@ -26,6 +26,40 @@
   -webkit-text-fill-color: transparent;
 }
 
+.timetable-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+.smart-recommend-btn {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #7e97e7 0%, #3b82f6 100%);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.smart-recommend-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #6d89e2 0%, #2d74f4 100%);
+}
+
+.smart-recommend-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* Version Toggle */
 .version-toggle {
   display: flex;

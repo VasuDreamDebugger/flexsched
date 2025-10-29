@@ -1052,4 +1052,19 @@ body {
     left: 100%;
   }
 }
- 
+
+/* Leisure slot styling */
+.class-slot.leisure {
+  background-color: #e8fff3 !important; /* Light green background */
+  border: 1px solid #86efac !important; /* Soft green border */
+}
+
+.leisure-badge {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  margin-top: 4px;
+  display: inline-block;
+}

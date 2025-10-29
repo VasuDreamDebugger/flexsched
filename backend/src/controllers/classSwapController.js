@@ -14,6 +14,7 @@ import Student from "../Models/Student.js";
 import {
   syncFacultyToClass,
   getClassTimetable as svcGetClassTimetable,
+  syncFacultyTimetableFromClass,
 } from "../services/timetableSync.js";
 
 // Validates that a slot has the required day and period fields
@@ -807,15 +808,32 @@ export const acceptSwapRequest = async (req, res) => {
       ) => {
         if (!classDoc) return false;
 
-        // Ensure we use local variables
-        const currentVersion = (classDoc.versions || []).find(
-          (v) => v.label === "default"
+        // Always operate on the latest 'updated' version if present, else copy from 'default'
+        let currentVersion = (classDoc.versions || []).find(
+          (v) => v.label === "updated"
         );
         if (!currentVersion) {
-          console.warn(
-            `[swap:update] No default version found for ${classDoc._id}`
+          // If no updated version, copy from default
+          const defaultVersion = (classDoc.versions || []).find(
+            (v) => v.label === "default"
           );
-          return false;
+          if (!defaultVersion) {
+            console.warn(
+              `[swap:update] No default or updated version found for ${classDoc._id}`
+            );
+            return false;
+          }
+          // Create updated version as a copy of default
+          currentVersion = {
+            label: "updated",
+            timeSlots: JSON.parse(
+              JSON.stringify(defaultVersion.timeSlots || [])
+            ),
+            updatedAt: new Date(),
+            updatedBy,
+            swapReference,
+          };
+          classDoc.versions = [...(classDoc.versions || []), currentVersion];
         }
 
         // Normalize swapPeriod/otherPeriod (support both number and array stored as 'periods')
@@ -826,7 +844,7 @@ export const acceptSwapRequest = async (req, res) => {
         const sPeriod = normalizePeriod(swapPeriod);
         const oPeriod = normalizePeriod(otherPeriod);
 
-        // Start from the latest default version's slots
+        // Work from the latest updated version's slots
         const updatedSlots = JSON.parse(
           JSON.stringify(currentVersion.timeSlots || [])
         );
@@ -983,6 +1001,45 @@ export const acceptSwapRequest = async (req, res) => {
           console.log(`[swap:update] Verified save for class ${classDoc._id}`, {
             slots: savedVersion.timeSlots.length,
           });
+          try {
+            // Sync this class timetable to faculty timetables so faculty docs remain consistent
+            await syncFacultyTimetableFromClass(saved, "updated");
+            console.log(
+              `[swap:update] Synced class ${classDoc._id} to faculty timetables`
+            );
+            // Debug: print updated faculty timetable for all affected faculties
+            const affectedFacultyIds = Array.from(
+              new Set(
+                saved.versions
+                  .find((v) => v.label === "updated")
+                  ?.timeSlots.map((s) => s.facultyId)
+                  .filter(Boolean)
+              )
+            );
+            for (const fid of affectedFacultyIds) {
+              const ft = await FacultyTimetable.findOne({
+                facultyId: fid,
+                academicYear: saved.academicYear,
+                semester: saved.semester,
+              });
+              if (ft) {
+                console.log(
+                  `[swap:update] FacultyTimetable for faculty ${fid} (${saved.academicYear}/${saved.semester}):`,
+                  ft.versions.find((v) => v.label === ft.currentVersionLabel)
+                    ?.timeSlots
+                );
+              } else {
+                console.warn(
+                  `[swap:update] No FacultyTimetable found for faculty ${fid} (${saved.academicYear}/${saved.semester})`
+                );
+              }
+            }
+          } catch (syncErr) {
+            console.warn(
+              `[swap:update] Sync to faculty timetables failed for class ${classDoc._id}:`,
+              syncErr.message || syncErr
+            );
+          }
           return true;
         } catch (saveErr) {
           console.error("[swap:update] Save failed:", saveErr);
