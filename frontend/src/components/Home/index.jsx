@@ -90,7 +90,7 @@ const Home = () => {
                   className="btn developer-btn"
                   onClick={() => setShowDeveloperModal(true)}
                 >
-                  Developer
+                  Login As Admin
                 </button>
               </div>
             </section>

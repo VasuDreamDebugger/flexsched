@@ -219,17 +219,21 @@ const Students = () => {
                       {slot ? (
                         <div
                           className={`class-slot${slot.isLab ? " lab" : ""}${
-                            slot.isFree ? " - " : ""
+                            slot.isFree ? "" : ""
                           }`}
                         >
                           <div className="subject">
-                            {slot.isFree ? "LEISURE" : slot.subject}
+                            {slot.isFree && day == ""
+                              ? " "
+                              : slot.subject !== "LEISURE"
+                              ? slot.subject
+                              : " - "}
                           </div>
                           {slot.isLab && <div className="lab-badge">Lab</div>}
-                          {slot.isFree && <div className="leisure-badge"></div>}
+                          {/* {slot.isFree && <div className="leisure-badge"></div>} */}
                         </div>
                       ) : (
-                        <div className="empty-slot">-</div>
+                        <div className="empty-slot"></div>
                       )}
                     </td>
                   );
