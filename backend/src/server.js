@@ -19,7 +19,7 @@ app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: true,
-  })
+  }),
 );
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
@@ -49,10 +49,7 @@ app.use((req, res) => {
 // Connect to MongoDB and start server
 const PORT = process.env.PORT || 3000;
 
-connectMongoDB();
-app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
-  // Promote students yearly on June 1st at 02:00
+const scheduleJobs = () => {
   cron.schedule("0 2 1 6 *", async () => {
     try {
       console.log("Running yearly student promotion job...");
@@ -62,4 +59,29 @@ app.listen(PORT, () => {
       console.error("Student promotion job failed:", e);
     }
   });
-});
+};
+
+export const initializeServer = async () => {
+  await connectMongoDB();
+
+  if (process.env.VERCEL === "1") {
+    console.log(
+      "Running in Vercel serverless environment; skipping app.listen and cron scheduling.",
+    );
+    return;
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Server started on port ${PORT}`);
+    scheduleJobs();
+  });
+};
+
+if (process.env.VERCEL !== "1") {
+  initializeServer().catch((error) => {
+    console.error("Server initialization failed:", error);
+    process.exit(1);
+  });
+}
+
+export default app;
