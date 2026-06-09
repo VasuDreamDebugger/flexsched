@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import apiClient, { API_BASE_URL } from "../../api/axiosClient";
 import "./SwapRequestModal.css";
-
-const API_BASE_URL = "http://localhost:3000/api";
 
 const SwapRequestModal = ({ isOpen, onClose, swapData }) => {
   const [reason, setReason] = useState("");

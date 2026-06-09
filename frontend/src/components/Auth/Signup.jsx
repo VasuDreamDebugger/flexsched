@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import apiClient from "../api/axiosClient";
 import "./Signup.css"; // styles for card
 
 function Signup() {
@@ -8,7 +8,7 @@ function Signup() {
     email: "",
     password: "",
     confirmPassword: "",
-    department: ""
+    department: "",
   });
 
   const [message, setMessage] = useState("");
@@ -18,28 +18,30 @@ function Signup() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (form.password !== form.confirmPassword) {
-    setMessage("❌ Passwords do not match!");
-    return;
-  }
+    if (form.password !== form.confirmPassword) {
+      setMessage("❌ Passwords do not match!");
+      return;
+    }
 
-  try {
-    const res = await axios.post("http://localhost:5000/api/auth/signup", {
-      name: form.name,
-      email: form.email,
-      password: form.password,
-    });
+    try {
+      const res = await apiClient.post("/auth/signup", {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+      });
 
-    setMessage("✅ Account created successfully!");
-    console.log("Signup Success:", res.data);
-  } catch (err) {
-    console.error("Signup Error:", err.response ? err.response.data : err.message);
-    setMessage("❌ " + (err.response?.data?.message || err.message));
-  }
-};
-
+      setMessage("✅ Account created successfully!");
+      console.log("Signup Success:", res.data);
+    } catch (err) {
+      console.error(
+        "Signup Error:",
+        err.response ? err.response.data : err.message,
+      );
+      setMessage("❌ " + (err.response?.data?.message || err.message));
+    }
+  };
 
   return (
     <div className="signup-bg">

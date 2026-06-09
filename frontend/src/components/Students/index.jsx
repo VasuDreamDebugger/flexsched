@@ -3,7 +3,7 @@ import "./skeleton.css";
 
 import { useState } from "react";
 import { useEffect, useCallback } from "react";
-import axios from "axios";
+import apiClient, { API_BASE_URL } from "../../api/axiosClient";
 
 const LoaderTable = () => {
   return (
@@ -55,7 +55,6 @@ const LoaderTable = () => {
 };
 
 // Timetable logic and state
-const API_BASE_URL = "http://localhost:3000/api";
 const days = [
   "Monday",
   "Tuesday",
@@ -136,7 +135,7 @@ const Students = () => {
         ts.day === slot.day &&
         (ts.periods?.includes
           ? ts.periods?.includes(slot.period)
-          : ts.period === slot.period || ts.periods === slot.period)
+          : ts.period === slot.period || ts.periods === slot.period),
     );
     if (!defaultSlot) return true;
     return (
@@ -149,7 +148,7 @@ const Students = () => {
   const renderTimetable = (
     timetable,
     defaultTimetable,
-    variant = "updated"
+    variant = "updated",
   ) => {
     if (!timetable) return null;
     return (
@@ -193,12 +192,12 @@ const Students = () => {
                       ts.day === day &&
                       (ts.periods?.includes
                         ? ts.periods?.includes(period)
-                        : ts.period === period || ts.periods === period)
+                        : ts.period === period || ts.periods === period),
                   );
                   const isChanged = isChangedSlot(
                     slot,
                     defaultTimetable,
-                    variant
+                    variant,
                   );
                   return (
                     <td
@@ -226,8 +225,8 @@ const Students = () => {
                             {slot.isFree && day == ""
                               ? " "
                               : slot.subject !== "LEISURE"
-                              ? slot.subject
-                              : " - "}
+                                ? slot.subject
+                                : " - "}
                           </div>
                           {slot.isLab && <div className="lab-badge">Lab</div>}
                           {/* {slot.isFree && <div className="leisure-badge"></div>} */}
@@ -302,7 +301,7 @@ const Students = () => {
                 ? defaultClassTimetable
                 : classTimetable,
               defaultClassTimetable,
-              classTimetableVariant
+              classTimetableVariant,
             )
           )}
         </div>

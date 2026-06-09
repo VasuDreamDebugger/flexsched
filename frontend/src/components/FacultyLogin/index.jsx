@@ -2,10 +2,8 @@ import { Modal } from "bootstrap";
 import { useEffect, useRef, useState } from "react";
 import { useModal } from "../../contexts/modalContext";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import apiClient, { API_BASE_URL } from "../../api/axiosClient";
 import "./index.css";
-
-const API_BASE_URL = "http://localhost:3000/api";
 
 const FacultyLogin = () => {
   const modalRef = useRef(null);
@@ -57,7 +55,7 @@ const FacultyLogin = () => {
     } catch (error) {
       console.error("Login error:", error);
       setError(
-        error.response?.data?.message || "Login failed. Please try again."
+        error.response?.data?.message || "Login failed. Please try again.",
       );
     } finally {
       setLoading(false);

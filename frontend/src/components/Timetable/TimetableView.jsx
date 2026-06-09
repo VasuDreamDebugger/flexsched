@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import axios from "axios";
+import apiClient, { API_BASE_URL } from "../api/axiosClient";
 import "./TimetableView.css";
 import "./skeleton.css";
 import SmartRecommendModal from "../SmartRecommend/SmartRecommendModal";
-
-const API_BASE_URL = "http://localhost:3000/api";
 
 // Time periods mapping for morning/afternoon sections
 const MORNING_PERIODS = [1, 2, 3];
@@ -140,7 +138,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       if (!response.data.success) {
         throw new Error(response.data.message);
@@ -174,7 +172,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       if (!response.data.success) {
         throw new Error(response.data.message);
@@ -240,7 +238,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
           data.versions.find((v) => v.label === "default") || data.versions[0];
         const updatedVersion =
           data.versions.find(
-            (v) => v.label === data.currentVersionLabel || "updated"
+            (v) => v.label === data.currentVersionLabel || "updated",
           ) || defaultVersion;
 
         setDefaultFacultyTimetable({
@@ -289,7 +287,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
         `${API_BASE_URL}/timetable/classes/available`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
       setAvailableClasses(response.data.data.classes || {});
     } catch (error) {
@@ -345,7 +343,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
       // Store both versions
       const defaultNormalized = normalizeVersion(data.default || {});
       const updatedNormalized = normalizeVersion(
-        data.updated || data.default || {}
+        data.updated || data.default || {},
       );
 
       setDefaultClassTimetable(defaultNormalized);
@@ -433,13 +431,13 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
       }
 
       const isSelected = selectedPeriods.some(
-        (p) => p.day === day && p.period === period
+        (p) => p.day === day && p.period === period,
       );
       if (isSelected) {
         classes += " selected";
         // optional: add distinct marker for source vs target
         const selIndex = selectedPeriods.findIndex(
-          (p) => p.day === day && p.period === period
+          (p) => p.day === day && p.period === period,
         );
         if (selIndex === 0) classes += " selected-source";
         if (selIndex === 1) classes += " selected-target";
@@ -457,7 +455,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
         ts.day === slot.day &&
         (ts.periods?.includes
           ? ts.periods?.includes(slot.period)
-          : ts.period === slot.period || ts.periods === slot.period)
+          : ts.period === slot.period || ts.periods === slot.period),
     );
 
     if (!defaultSlot) return true;
@@ -472,7 +470,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
     timetable,
     isFacultyTimetable = false,
     defaultTimetable = null,
-    variant = "updated"
+    variant = "updated",
   ) => {
     if (!timetable) return null;
 
@@ -525,19 +523,19 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
                       ts.day === day &&
                       (ts.periods?.includes
                         ? ts.periods?.includes(period)
-                        : ts.period === period || ts.periods === period)
+                        : ts.period === period || ts.periods === period),
                   );
 
                   const isChanged = isChangedSlot(
                     slot,
                     defaultTimetable,
-                    variant
+                    variant,
                   );
                   const cellClasses = `${getCellClass(
                     day,
                     period,
                     slot,
-                    isFacultyTimetable
+                    isFacultyTimetable,
                   )} ${isChanged ? "changed-class" : ""}`;
 
                   return (
@@ -646,7 +644,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
                 : facultyTimetable,
               true,
               defaultFacultyTimetable,
-              timetableVariant
+              timetableVariant,
             )}
         </div>
       </div>
@@ -735,11 +733,11 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
                 try {
                   console.log(
                     "[DEBUG] faculty keys:",
-                    faculty ? Object.keys(faculty) : null
+                    faculty ? Object.keys(faculty) : null,
                   );
                   console.log(
                     "[DEBUG] faculty.timetableId:",
-                    faculty?.timetableId
+                    faculty?.timetableId,
                   );
                 } catch (e) {
                   console.log("[DEBUG] faculty log error", e);
@@ -748,15 +746,15 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
                   console.log("[DEBUG] classTimetable (raw):", classTimetable);
                   console.log(
                     "[DEBUG] classTimetable typeof:",
-                    typeof classTimetable
+                    typeof classTimetable,
                   );
                   console.log(
                     "[DEBUG] classTimetable._id:",
-                    classTimetable?._id || classTimetable?.id || null
+                    classTimetable?._id || classTimetable?.id || null,
                   );
                   console.log(
                     "[DEBUG] classTimetable.timeSlots exists:",
-                    Array.isArray(classTimetable?.timeSlots)
+                    Array.isArray(classTimetable?.timeSlots),
                   );
                 } catch (e) {
                   console.log("[DEBUG] classTimetable log error", e);
@@ -782,12 +780,12 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
                     alert(
                       "Missing: " +
                         missing.join(", ") +
-                        ". Please reselect class."
+                        ". Please reselect class.",
                     );
                     console.warn(
                       "[DEBUG] Missing fields for Smart Recommend:",
                       missing,
-                      { selectedClass, classTimetable, faculty }
+                      { selectedClass, classTimetable, faculty },
                     );
                   }
                 }}
@@ -816,7 +814,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
                   : classTimetable,
                 false,
                 defaultClassTimetable,
-                classTimetableVariant
+                classTimetableVariant,
               )}
           </div>
         </div>
@@ -840,7 +838,7 @@ const TimetableView = ({ faculty, onSwapRequest }) => {
           // so require a faculty identifier and the class timetable id instead.
           if (!classTimetable?._id || !(faculty?._id || faculty?.id)) {
             throw new Error(
-              "Missing timetable or faculty details. Please reselect class."
+              "Missing timetable or faculty details. Please reselect class.",
             );
           }
           return handleSmartRecommend(day, section);
