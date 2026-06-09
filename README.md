@@ -2,7 +2,7 @@
 
 ## Description
 
-FlexSchedKoundy is a comprehensive flexible scheduling system designed for educational institutions. It enables faculty members, students, and administrators to efficiently manage class timetables, request class swaps, receive smart recommendations for scheduling adjustments, and handle various administrative tasks. The system supports real-time notifications via email and provides a user-friendly interface for all stakeholders.
+FlexSched is a comprehensive flexible scheduling system designed for educational institutions. It enables faculty members, students, and administrators to efficiently manage class timetables, request class swaps, receive smart recommendations for scheduling adjustments, and handle various administrative tasks. The system supports real-time notifications via email and provides a user-friendly interface for all stakeholders.
 
 ## Features
 
@@ -140,7 +140,7 @@ For complete API documentation, refer to the Postman collection or Swagger docum
 ## Project Structure
 
 ```
-FlexSchedKoundy/
+FlexSched/
 ├── backend/
 │   ├── src/
 │   │   ├── config/
