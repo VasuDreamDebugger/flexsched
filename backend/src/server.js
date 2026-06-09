@@ -9,8 +9,10 @@ import Student from "./Models/Student.js";
 import ClassTimetable from "./Models/ClassTimetable.js";
 import cron from "node-cron";
 
-// Load environment variables
-dotenv.config();
+// Load environment variables locally only
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config();
+}
 
 const app = express();
 
@@ -24,9 +26,19 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+// Connect MongoDB before API/test routes in serverless mode.
+const connectDbMiddleware = async (req, res, next) => {
+  try {
+    await connectMongoDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
+
 // Routes
-app.use("/api", routes);
-app.use("/test", testRoutes);
+app.use("/api", connectDbMiddleware, routes);
+app.use("/test", connectDbMiddleware, testRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

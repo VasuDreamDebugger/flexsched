@@ -5,11 +5,23 @@ const MONGO_URI =
   "mongodb+srv://vasumanikanta352_db_user:flexsched123@flexsched.zyjwzbw.mongodb.net/FlexSchedDB?retryWrites=true&w=majority&appName=FlexSched";
 
 const connectMongoDB = async () => {
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  if (mongoose.connection.readyState === 2) {
+    return mongoose.connection.asPromise();
+  }
+
   try {
     console.log("Connecting to MongoDB...");
     console.log("MONGO_URI:", MONGO_URI ? "Loaded" : "Not loaded");
-    await mongoose.connect(MONGO_URI);
+    await mongoose.connect(MONGO_URI, {
+      autoIndex: true,
+      maxPoolSize: 10,
+    });
     console.log("MongoDB Connected successfully!");
+    return mongoose.connection;
   } catch (error) {
     console.log("MongoDB connection error:", error.message);
     console.log("Full error:", error.stack);

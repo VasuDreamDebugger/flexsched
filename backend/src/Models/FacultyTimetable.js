@@ -29,7 +29,7 @@ const facultySlotSchema = new mongoose.Schema(
     isLab: { type: Boolean, default: false },
     isTheory: { type: Boolean, default: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const facultyVersionSchema = new mongoose.Schema(
@@ -39,7 +39,7 @@ const facultyVersionSchema = new mongoose.Schema(
     updatedAt: { type: Date, default: Date.now },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Faculty" },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const facultyTimetableSchema = new mongoose.Schema(
@@ -48,14 +48,13 @@ const facultyTimetableSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Faculty",
       required: true,
-      index: true,
     },
-    academicYear: { type: String, required: true, trim: true, index: true },
-    semester: { type: String, required: true, trim: true, index: true },
+    academicYear: { type: String, required: true, trim: true },
+    semester: { type: String, required: true, trim: true },
     versions: { type: [facultyVersionSchema], default: [] },
     currentVersionLabel: { type: String, default: "default" },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Index to quickly find faculty doc for a given academic year/semester
@@ -63,7 +62,7 @@ facultyTimetableSchema.index({ facultyId: 1, academicYear: 1, semester: 1 });
 
 const FacultyTimetable = mongoose.model(
   "FacultyTimetable",
-  facultyTimetableSchema
+  facultyTimetableSchema,
 );
 
 export default FacultyTimetable;

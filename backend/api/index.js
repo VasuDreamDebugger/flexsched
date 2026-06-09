@@ -1,6 +1,3 @@
-import app, { initializeServer } from "../src/server.js";
-
-// Ensure DB connects on Vercel cold start.
-await initializeServer();
+import app from "../src/server.js";
 
 export default app;

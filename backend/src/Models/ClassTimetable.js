@@ -41,7 +41,7 @@ const classSlotSchema = new mongoose.Schema(
     isLab: { type: Boolean, default: false },
     isTheory: { type: Boolean, default: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const versionSchema = new mongoose.Schema(
@@ -64,16 +64,16 @@ const versionSchema = new mongoose.Schema(
     note: { type: String, required: false },
     timestamp: { type: Date, required: false },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const classTimetableSchema = new mongoose.Schema(
   {
-    branch: { type: String, required: true, trim: true, index: true },
-    year: { type: String, required: true, trim: true, index: true },
-    section: { type: String, required: true, trim: true, index: true },
-    academicYear: { type: String, required: true, trim: true, index: true },
-    semester: { type: String, required: true, trim: true, index: true },
+    branch: { type: String, required: true, trim: true },
+    year: { type: String, required: true, trim: true },
+    section: { type: String, required: true, trim: true },
+    academicYear: { type: String, required: true, trim: true },
+    semester: { type: String, required: true, trim: true },
     versions: { type: [versionSchema], default: [] },
     // track which version label is currently active (controller sets this)
     currentVersionLabel: {
@@ -82,12 +82,12 @@ const classTimetableSchema = new mongoose.Schema(
       default: "default",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 classTimetableSchema.index(
   { branch: 1, year: 1, section: 1, academicYear: 1, semester: 1 },
-  { unique: true }
+  { unique: true },
 );
 
 const ClassTimetable = mongoose.model("ClassTimetable", classTimetableSchema);
