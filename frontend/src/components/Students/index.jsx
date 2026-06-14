@@ -136,7 +136,7 @@ const Students = () => {
         ts.day === slot.day &&
         (ts.periods?.includes
           ? ts.periods?.includes(slot.period)
-          : ts.period === slot.period || ts.periods === slot.period)
+          : ts.period === slot.period || ts.periods === slot.period),
     );
     if (!defaultSlot) return true;
     return (
@@ -149,7 +149,7 @@ const Students = () => {
   const renderTimetable = (
     timetable,
     defaultTimetable,
-    variant = "updated"
+    variant = "updated",
   ) => {
     if (!timetable) return null;
     return (
@@ -193,12 +193,12 @@ const Students = () => {
                       ts.day === day &&
                       (ts.periods?.includes
                         ? ts.periods?.includes(period)
-                        : ts.period === period || ts.periods === period)
+                        : ts.period === period || ts.periods === period),
                   );
                   const isChanged = isChangedSlot(
                     slot,
                     defaultTimetable,
-                    variant
+                    variant,
                   );
                   return (
                     <td
@@ -226,8 +226,8 @@ const Students = () => {
                             {slot.isFree && day == ""
                               ? " "
                               : slot.subject !== "LEISURE"
-                              ? slot.subject
-                              : " - "}
+                                ? slot.subject
+                                : " - "}
                           </div>
                           {slot.isLab && <div className="lab-badge">Lab</div>}
                           {/* {slot.isFree && <div className="leisure-badge"></div>} */}
@@ -302,7 +302,7 @@ const Students = () => {
                 ? defaultClassTimetable
                 : classTimetable,
               defaultClassTimetable,
-              classTimetableVariant
+              classTimetableVariant,
             )
           )}
         </div>

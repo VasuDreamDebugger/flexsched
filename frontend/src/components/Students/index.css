@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
 * {
   margin: 0;
@@ -6,8 +6,8 @@
   box-sizing: border-box;
 }
 
-body { 
-  font-family: 'Inter', sans-serif; 
+body {
+  font-family: "Inter", sans-serif;
   background-color: #f0f4f8;
 }
 
@@ -58,7 +58,7 @@ body {
   font-weight: 600;
   text-align: center;
   padding: 10px;
-  border: 1px solid rgba(59,130,246,0.25);
+  border: 1px solid rgba(59, 130, 246, 0.25);
 }
 
 .timetable tbody td {
@@ -66,10 +66,11 @@ body {
   padding: 12px;
   height: 3rem;
   color: #0f172a;
-  border: 1px solid rgba(59,130,246,0.2); /* thin blue-ish grid */
+  border: 1px solid rgba(59, 130, 246, 0.2); /* thin blue-ish grid */
 }
 
-.timetable tbody tr:nth-child(odd) td { /* zebra row, very light */
+.timetable tbody tr:nth-child(odd) td {
+  /* zebra row, very light */
   background-color: #f7fbff;
 }
 
@@ -83,15 +84,31 @@ body {
   padding-left: 12px;
 }
 
-.timetable th:first-child { border-left: 1px solid rgba(59,130,246,0.25); }
-.timetable th:last-child { border-right: 1px solid rgba(59,130,246,0.25); }
-.timetable td:first-child { border-left: 1px solid rgba(59,130,246,0.2); }
-.timetable td:last-child { border-right: 1px solid rgba(59,130,246,0.2); }
+.timetable th:first-child {
+  border-left: 1px solid rgba(59, 130, 246, 0.25);
+}
+.timetable th:last-child {
+  border-right: 1px solid rgba(59, 130, 246, 0.25);
+}
+.timetable td:first-child {
+  border-left: 1px solid rgba(59, 130, 246, 0.2);
+}
+.timetable td:last-child {
+  border-right: 1px solid rgba(59, 130, 246, 0.2);
+}
 
-.timetable thead tr:first-child th:first-child { border-top-left-radius: 8px; }
-.timetable thead tr:first-child th:last-child { border-top-right-radius: 8px; }
-.timetable tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
-.timetable tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
+.timetable thead tr:first-child th:first-child {
+  border-top-left-radius: 8px;
+}
+.timetable thead tr:first-child th:last-child {
+  border-top-right-radius: 8px;
+}
+.timetable tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 8px;
+}
+.timetable tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 8px;
+}
 
 /* highlight for changed cells in Updated view */
 .cell-changed {
@@ -155,7 +172,6 @@ body {
   justify-content: center;
   height: 100%;
 }
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 * {
   margin: 0;
@@ -163,8 +179,8 @@ body {
   box-sizing: border-box;
 }
 
-body { 
-  font-family: 'Inter', sans-serif; 
+body {
+  font-family: "Inter", sans-serif;
   background-color: #f0f4f8;
 }
 
@@ -390,8 +406,13 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Main Container */
@@ -563,7 +584,7 @@ body {
   font-weight: 600;
   text-align: center;
   padding: 10px;
-  border: 1px solid rgba(59,130,246,0.25);
+  border: 1px solid rgba(59, 130, 246, 0.25);
 }
 
 .timetable tbody td {
@@ -571,10 +592,11 @@ body {
   padding: 12px;
   height: 3rem;
   color: #0f172a;
-  border: 1px solid rgba(59,130,246,0.2); /* thin blue-ish grid */
+  border: 1px solid rgba(59, 130, 246, 0.2); /* thin blue-ish grid */
 }
 
-.timetable tbody tr:nth-child(odd) td { /* zebra row, very light */
+.timetable tbody tr:nth-child(odd) td {
+  /* zebra row, very light */
   background-color: #f7fbff;
 }
 
@@ -588,15 +610,31 @@ body {
   padding-left: 12px;
 }
 
-.timetable th:first-child { border-left: 1px solid rgba(59,130,246,0.25); }
-.timetable th:last-child { border-right: 1px solid rgba(59,130,246,0.25); }
-.timetable td:first-child { border-left: 1px solid rgba(59,130,246,0.2); }
-.timetable td:last-child { border-right: 1px solid rgba(59,130,246,0.2); }
+.timetable th:first-child {
+  border-left: 1px solid rgba(59, 130, 246, 0.25);
+}
+.timetable th:last-child {
+  border-right: 1px solid rgba(59, 130, 246, 0.25);
+}
+.timetable td:first-child {
+  border-left: 1px solid rgba(59, 130, 246, 0.2);
+}
+.timetable td:last-child {
+  border-right: 1px solid rgba(59, 130, 246, 0.2);
+}
 
-.timetable thead tr:first-child th:first-child { border-top-left-radius: 8px; }
-.timetable thead tr:first-child th:last-child { border-top-right-radius: 8px; }
-.timetable tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
-.timetable tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
+.timetable thead tr:first-child th:first-child {
+  border-top-left-radius: 8px;
+}
+.timetable thead tr:first-child th:last-child {
+  border-top-right-radius: 8px;
+}
+.timetable tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 8px;
+}
+.timetable tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 8px;
+}
 
 /* highlight for changed cells in Updated view */
 .cell-changed {
@@ -928,7 +966,7 @@ body {
   .content-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .sidebar {
     grid-column: 1;
   }
@@ -940,26 +978,26 @@ body {
     gap: 16px;
     text-align: center;
   }
-  
+
   .header-right {
     flex-direction: column;
     gap: 12px;
   }
-  
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .schedule-header {
     flex-direction: column;
     gap: 16px;
     align-items: flex-start;
   }
-  
+
   .schedule-tabs {
     width: 100%;
   }
-  
+
   .schedule-tab {
     flex: 1;
     text-align: center;
@@ -970,22 +1008,21 @@ body {
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .schedule-item-content {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
-  
+
   .schedule-item-right {
     width: 100%;
     justify-content: space-between;
   }
 }
 
-
- .skeleton-container {
-    width: 80vw;
+.skeleton-container {
+  width: 80vw;
   margin: 2rem auto;
   padding: 1rem;
   background-color: #ffffff;
@@ -1040,7 +1077,12 @@ body {
   left: -150px;
   height: 100%;
   width: 150px;
-  background: linear-gradient(to right, transparent 0%, #f1f5f9 50%, transparent 100%);
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    #f1f5f9 50%,
+    transparent 100%
+  );
   animation: shimmer 1.5s infinite;
 }
 
