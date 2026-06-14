@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import apiClient, { API_BASE_URL } from "../api/axiosClient";
 import TimetableView from "../Timetable/TimetableView";
 import SwapRequestModal from "../SwapRequestModal/SwapRequestModal";
 import "./index.css";
-
-const API_BASE_URL = "http://localhost:3000/api";
 
 function FacultyPage() {
   const [faculty, setFaculty] = useState(null);

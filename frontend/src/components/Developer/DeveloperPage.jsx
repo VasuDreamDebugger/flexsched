@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import './DeveloperPage.css';
-
-const API_BASE_URL = 'http://localhost:3000/api';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import apiClient, { API_BASE_URL } from "../../api/axiosClient";
+import "./DeveloperPage.css";
 
 const DeveloperPage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminData, setAdminData] = useState(null);
   const [loginForm, setLoginForm] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -18,9 +16,9 @@ const DeveloperPage = () => {
 
   useEffect(() => {
     // Check if admin is already logged in
-    const token = localStorage.getItem('adminToken');
-    const adminData = localStorage.getItem('adminData');
-    
+    const token = localStorage.getItem("adminToken");
+    const adminData = localStorage.getItem("adminData");
+
     if (token && adminData) {
       setIsAuthenticated(true);
       setAdminData(JSON.parse(adminData));
@@ -32,51 +30,54 @@ const DeveloperPage = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/admin/login`, loginForm);
-      
+      const response = await axios.post(
+        `${API_BASE_URL}/admin/login`,
+        loginForm,
+      );
+
       if (response.data.success) {
         const { admin, token } = response.data.data;
-        
-        localStorage.setItem('adminToken', token);
-        localStorage.setItem('adminData', JSON.stringify(admin));
-        
+
+        localStorage.setItem("adminToken", token);
+        localStorage.setItem("adminData", JSON.stringify(admin));
+
         setIsAuthenticated(true);
         setAdminData(admin);
       }
     } catch (error) {
-      console.error('Login error:', error);
-      alert('Login failed. Please check your credentials.');
+      console.error("Login error:", error);
+      alert("Login failed. Please check your credentials.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminData');
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminData");
     setIsAuthenticated(false);
     setAdminData(null);
   };
 
   const handleOptionClick = (option) => {
     switch (option) {
-      case 'add-faculty':
-        navigate('/developer/add-faculty');
+      case "add-faculty":
+        navigate("/developer/add-faculty");
         break;
-      case 'add-faculty-timetable':
-        navigate('/developer/add-faculty-timetable');
+      case "add-faculty-timetable":
+        navigate("/developer/add-faculty-timetable");
         break;
-      case 'add-class-timetable':
-        navigate('/developer/add-class-timetable');
+      case "add-class-timetable":
+        navigate("/developer/add-class-timetable");
         break;
-      case 'add-student':
-        navigate('/developer/add-student');
+      case "add-student":
+        navigate("/developer/add-student");
         break;
-      case 'view-faculties':
-        navigate('/developer/view-faculties');
+      case "view-faculties":
+        navigate("/developer/view-faculties");
         break;
-      case 'view-timetables':
-        navigate('/developer/view-timetables');
+      case "view-timetables":
+        navigate("/developer/view-timetables");
         break;
       default:
         break;
@@ -91,7 +92,7 @@ const DeveloperPage = () => {
             <h2>Developer Access</h2>
             <p>Login to access developer tools</p>
           </div>
-          
+
           <form onSubmit={handleLogin} className="login-form">
             <div className="form-group">
               <label htmlFor="email">Email</label>
@@ -99,31 +100,37 @@ const DeveloperPage = () => {
                 type="email"
                 id="email"
                 value={loginForm.email}
-                onChange={(e) => setLoginForm({...loginForm, email: e.target.value})}
+                onChange={(e) =>
+                  setLoginForm({ ...loginForm, email: e.target.value })
+                }
                 required
                 placeholder="Enter admin email"
               />
             </div>
-            
+
             <div className="form-group">
               <label htmlFor="password">Password</label>
               <input
                 type="password"
                 id="password"
                 value={loginForm.password}
-                onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
+                onChange={(e) =>
+                  setLoginForm({ ...loginForm, password: e.target.value })
+                }
                 required
                 placeholder="Enter password"
               />
             </div>
-            
+
             <button type="submit" className="login-btn" disabled={loading}>
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? "Logging in..." : "Login"}
             </button>
           </form>
-          
+
           <div className="login-info">
-            <p><strong>Demo Credentials:</strong></p>
+            <p>
+              <strong>Demo Credentials:</strong>
+            </p>
             <p>Email: developer@university.edu</p>
             <p>Password: dev123</p>
           </div>
@@ -137,10 +144,12 @@ const DeveloperPage = () => {
       <div className="developer-header">
         <div className="admin-info">
           <h1>Developer Dashboard</h1>
-          <p>Welcome, {adminData?.username} ({adminData?.role})</p>
+          <p>
+            Welcome, {adminData?.username} ({adminData?.role})
+          </p>
         </div>
         <div className="header-actions">
-          <button onClick={() => navigate('/')} className="btn-secondary">
+          <button onClick={() => navigate("/")} className="btn-secondary">
             Back to Home
           </button>
           <button onClick={handleLogout} className="btn-danger">
@@ -152,43 +161,61 @@ const DeveloperPage = () => {
       <div className="developer-options">
         <h2>Management Options</h2>
         <div className="options-grid">
-          <div className="option-card" onClick={() => handleOptionClick('add-faculty')}>
+          <div
+            className="option-card"
+            onClick={() => handleOptionClick("add-faculty")}
+          >
             <div className="option-icon">👨‍🏫</div>
             <h3>Add Faculty</h3>
-            <p>Create new faculty accounts with individual or bulk CSV upload</p>
+            <p>
+              Create new faculty accounts with individual or bulk CSV upload
+            </p>
           </div>
 
-          <div className="option-card" onClick={() => handleOptionClick('add-faculty-timetable')}>
+          <div
+            className="option-card"
+            onClick={() => handleOptionClick("add-faculty-timetable")}
+          >
             <div className="option-icon">📅</div>
             <h3>Add Faculty Timetable</h3>
             <p>Create timetables for specific faculty members</p>
           </div>
 
-          <div className="option-card" onClick={() => handleOptionClick('add-class-timetable')}>
+          <div
+            className="option-card"
+            onClick={() => handleOptionClick("add-class-timetable")}
+          >
             <div className="option-icon">🏫</div>
             <h3>Add Class Timetable</h3>
             <p>Create timetables for specific classes (year/branch/section)</p>
           </div>
 
-        <div className="option-card" onClick={() => handleOptionClick('add-student')}>
-          <div className="option-icon">🎓</div>
-          <h3>Add Student</h3>
-          <p>Create a student or bulk generate by branch/year/section</p>
-        </div>
+          <div
+            className="option-card"
+            onClick={() => handleOptionClick("add-student")}
+          >
+            <div className="option-icon">🎓</div>
+            <h3>Add Student</h3>
+            <p>Create a student or bulk generate by branch/year/section</p>
+          </div>
 
-          <div className="option-card" onClick={() => handleOptionClick('view-faculties')}>
+          <div
+            className="option-card"
+            onClick={() => handleOptionClick("view-faculties")}
+          >
             <div className="option-icon">👥</div>
             <h3>View Faculties</h3>
             <p>View and manage all faculty accounts</p>
           </div>
 
-          <div className="option-card" onClick={() => handleOptionClick('view-timetables')}>
+          <div
+            className="option-card"
+            onClick={() => handleOptionClick("view-timetables")}
+          >
             <div className="option-icon">📋</div>
             <h3>View Timetables</h3>
             <p>View and manage all timetables</p>
           </div>
-
-        
         </div>
       </div>
     </div>

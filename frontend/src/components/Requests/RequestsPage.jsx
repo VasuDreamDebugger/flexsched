@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import apiClient, { API_BASE_URL } from "../api/axiosClient";
 import "./RequestsPage.css";
-
-const API_BASE_URL = "http://localhost:3000/api";
 
 const RequestsPage = () => {
   const [requests, setRequests] = useState([]);
@@ -42,7 +40,7 @@ const RequestsPage = () => {
         },
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       alert("Swap request accepted successfully!");
@@ -68,7 +66,7 @@ const RequestsPage = () => {
         },
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       alert("Swap request rejected");
@@ -92,7 +90,7 @@ const RequestsPage = () => {
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       alert("Swap request cancelled");
@@ -135,13 +133,13 @@ const RequestsPage = () => {
   const filteredRequestsReceived = requests.filter(
     (request) =>
       request.targetFacultyId._id ===
-      JSON.parse(localStorage.getItem("faculty"))._id
+      JSON.parse(localStorage.getItem("faculty"))._id,
   );
 
   const filteredRequestsSent = requests.filter(
     (request) =>
       request.requesterId._id ===
-      JSON.parse(localStorage.getItem("faculty"))._id
+      JSON.parse(localStorage.getItem("faculty"))._id,
   );
 
   const filteredRequests = requests.filter((request) => {

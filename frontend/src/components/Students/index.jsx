@@ -3,7 +3,7 @@ import "./skeleton.css";
 
 import { useState } from "react";
 import { useEffect, useCallback } from "react";
-import axios from "axios";
+import apiClient, { API_BASE_URL } from "../../api/axiosClient";
 
 const LoaderTable = () => {
   return (
@@ -55,7 +55,6 @@ const LoaderTable = () => {
 };
 
 // Timetable logic and state
-const API_BASE_URL = "http://localhost:3000/api";
 const days = [
   "Monday",
   "Tuesday",

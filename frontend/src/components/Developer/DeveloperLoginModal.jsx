@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import apiClient, { API_BASE_URL } from "../../api/axiosClient";
 import "./DeveloperPage.css";
-
-const API_BASE_URL = "http://localhost:3000/api";
 
 const DeveloperLoginModal = ({ open, onClose }) => {
   const [email, setEmail] = useState("");
