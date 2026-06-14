@@ -15,7 +15,7 @@ const semester = semesterIndex !== -1 ? args[semesterIndex + 1] : null;
 
 if (!facultyId) {
   console.error(
-    'Usage: node syncSingleFaculty.mjs --faculty <facultyId> [--academicYear "..."] [--semester "..."] [--apply]'
+    'Usage: node syncSingleFaculty.mjs --faculty <facultyId> [--academicYear "..."] [--semester "..."] [--apply]',
   );
   process.exit(1);
 }
@@ -31,7 +31,7 @@ async function main() {
     "Semester:",
     semester,
     "Mode:",
-    APPLY ? "APPLY" : "DRY RUN"
+    APPLY ? "APPLY" : "DRY RUN",
   );
 
   // Find class timetables that reference this faculty in any version
@@ -60,7 +60,7 @@ async function main() {
   }
 
   console.log(
-    `Found ${collectedSlots.length} slots in class timetables for faculty ${facultyId}`
+    `Found ${collectedSlots.length} slots in class timetables for faculty ${facultyId}`,
   );
   if (!collectedSlots.length) {
     console.log("No class slots reference this faculty. Nothing to sync.");
@@ -80,7 +80,7 @@ async function main() {
   for (const [key, items] of byGroup.entries()) {
     const [ay, sem] = key.split("||");
     console.log(
-      `Processing group academicYear='${ay}' semester='${sem}' with ${items.length} slots`
+      `Processing group academicYear='${ay}' semester='${sem}' with ${items.length} slots`,
     );
 
     const mapped = items.map((it) => ({
@@ -104,7 +104,7 @@ async function main() {
     });
     if (!tt) {
       console.log(
-        "No Timetable doc found for faculty in this group; would create one."
+        "No Timetable doc found for faculty in this group; would create one.",
       );
       if (APPLY) {
         tt = new Timetable({
@@ -120,7 +120,7 @@ async function main() {
 
     if (tt) {
       const base = (tt.versions || []).find(
-        (v) => v.label === tt.currentVersionLabel
+        (v) => v.label === tt.currentVersionLabel,
       ) ||
         (tt.versions || []).find((v) => v.label === "default") || {
           timeSlots: [],
@@ -134,13 +134,13 @@ async function main() {
               Number(ms.period) === Number(fs.period) &&
               ms.branch === fs.branch &&
               ms.year === fs.year &&
-              ms.section === fs.section
-          )
+              ms.section === fs.section,
+          ),
       );
       const merged = [...cleaned, ...mapped];
 
       console.log(
-        `Would set updated version with ${merged.length} slots for Timetable (faculty ${facultyId})`
+        `Would set updated version with ${merged.length} slots for Timetable (faculty ${facultyId})`,
       );
       if (APPLY) {
         tt.versions = tt.versions || [];
@@ -156,7 +156,7 @@ async function main() {
       }
     } else {
       console.log(
-        "Dry-run: would create Timetable with updated version including mapped slots."
+        "Dry-run: would create Timetable with updated version including mapped slots.",
       );
     }
 
@@ -168,7 +168,7 @@ async function main() {
     });
     if (!ft) {
       console.log(
-        "No FacultyTimetable found for faculty in this group; would create one."
+        "No FacultyTimetable found for faculty in this group; would create one.",
       );
       if (APPLY) {
         ft = new FacultyTimetable({
@@ -184,7 +184,7 @@ async function main() {
 
     if (ft) {
       const base = (ft.versions || []).find(
-        (v) => v.label === ft.currentVersionLabel
+        (v) => v.label === ft.currentVersionLabel,
       ) ||
         (ft.versions || []).find((v) => v.label === "default") || {
           timeSlots: [],
@@ -198,13 +198,13 @@ async function main() {
               Number(ms.period) === Number(fs.period) &&
               ms.branch === fs.branch &&
               ms.year === fs.year &&
-              ms.section === fs.section
-          )
+              ms.section === fs.section,
+          ),
       );
       const merged = [...cleaned, ...mapped];
 
       console.log(
-        `Would set updated version with ${merged.length} slots for FacultyTimetable (faculty ${facultyId})`
+        `Would set updated version with ${merged.length} slots for FacultyTimetable (faculty ${facultyId})`,
       );
       if (APPLY) {
         ft.versions = ft.versions || [];
@@ -220,7 +220,7 @@ async function main() {
       }
     } else {
       console.log(
-        "Dry-run: would create FacultyTimetable with updated version including mapped slots."
+        "Dry-run: would create FacultyTimetable with updated version including mapped slots.",
       );
     }
   }
