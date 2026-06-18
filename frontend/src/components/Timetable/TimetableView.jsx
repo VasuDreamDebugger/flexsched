@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import apiClient, { API_BASE_URL } from "../api/axiosClient";
+import apiClient, { API_BASE_URL } from "../../api/axiosClient";
 import "./TimetableView.css";
 import "./skeleton.css";
 import SmartRecommendModal from "../SmartRecommend/SmartRecommendModal";

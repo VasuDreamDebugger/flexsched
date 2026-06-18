@@ -17,9 +17,24 @@ if (process.env.NODE_ENV !== "production") {
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+  "https://flexsched.vercel.app",
+  "https://www.flexsched.vercel.app",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+const isLocalOrigin = (origin) =>
+  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin || "");
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || isLocalOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   }),
 );

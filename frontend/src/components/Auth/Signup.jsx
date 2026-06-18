@@ -1,5 +1,5 @@
 import { useState } from "react";
-import apiClient from "../api/axiosClient";
+import apiClient from "../../api/axiosClient";
 import "./Signup.css"; // styles for card
 
 function Signup() {

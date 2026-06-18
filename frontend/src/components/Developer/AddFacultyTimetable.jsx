@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient, { API_BASE_URL } from "../../api/axiosClient";
-import "./AddFacultyTimetable.css";
+import "./AddTimetable.css";
 
 const AddFacultyTimetable = () => {
   const navigate = useNavigate();
@@ -48,9 +48,12 @@ const AddFacultyTimetable = () => {
   const fetchFaculties = async () => {
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await axios.get(`${API_BASE_URL}/admin/faculty/all`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiClient.get(
+        `${API_BASE_URL}/admin/faculty/all`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
       if (response.data.success) {
         setFaculties(response.data.data.faculties);
@@ -155,7 +158,7 @@ const AddFacultyTimetable = () => {
 
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await axios.post(
+      const response = await apiClient.post(
         `${API_BASE_URL}/admin/timetable/faculty`,
         formData,
         {

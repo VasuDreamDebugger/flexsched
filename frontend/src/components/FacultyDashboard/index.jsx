@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import apiClient, { API_BASE_URL } from "../api/axiosClient";
+import apiClient, { API_BASE_URL } from "../../api/axiosClient";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./index.css";
 

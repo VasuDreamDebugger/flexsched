@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import apiClient, { API_BASE_URL } from "../api/axiosClient";
+import apiClient, { API_BASE_URL } from "../../api/axiosClient";
 import "./RequestsPage.css";
 
 const RequestsPage = () => {
